@@ -9,54 +9,62 @@ API backend para controle de operações de voo, usuários e perfis de acesso.
 - Spring Web MVC
 - Spring Data JPA
 - Spring Security
+- JWT com JJWT
+- Bean Validation
 - PostgreSQL
 - Maven
 - Springdoc OpenAPI / Swagger
 - Docker Compose
 
-## O que já foi feito
+## Funcionalidades Implementadas
 
-- Estrutura inicial do projeto Spring Boot.
-- Entidade `User` criada.
-- Enum `Role` criado com os perfis:
-    - `ADMIN`
-    - `LEAD`
-    - `SUPERVISOR`
-    - `INSTRUCTOR`
-    - `PILOT`
-    - `TRAINEE`
-- Repositório `UserRepository` criado.
-- Configuração de conexão com PostgreSQL.
-- Configuração para criação/atualização automática das tabelas com JPA.
-- Rota de teste criada:
+- Cadastro de usuário com senha criptografada usando BCrypt.
+- Login com validação de senha e retorno de JWT.
+- Autenticação stateless com JWT.
+- Filtro JWT para proteger rotas privadas.
+- Rota protegida para perfil do usuário autenticado.
+- DTOs para entrada e saída de dados.
+- Validações com `@NotBlank`, `@Email` e `@Size`.
+- Exceptions personalizadas e handler global com `@RestControllerAdvice`.
+- Swagger configurado com autenticação Bearer Token.
+- Configuração local por variáveis de ambiente.
 
-```txt
-GET /asd/test
-```
-
-Resposta:
+## Estrutura Principal
 
 ```txt
-API funcionando
+auth/
+  controller/
+  dto/
+  filter/
+  service/
+
+users/
+  controller/
+  domain/
+  dto/
+  repository/
+
+common/
+  dto/
+  exception/
+
+config/
 ```
 
-- Swagger configurado.
-- DevTools adicionado para facilitar o desenvolvimento.
-- Variáveis de ambiente preparadas para evitar subir senha real no GitHub.
+## Variáveis de Ambiente
 
-## Configuração local
-
-Crie um arquivo `.env` na raiz do projeto com base no arquivo `.env.example`:
+Crie um arquivo `.env` na raiz do projeto com base no `.env.example`:
 
 ```env
 POSTGRES_DB=air_ops
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=1234
+JWT_SECRET=air-ops-system-local-dev-secret-1234567890
 ```
 
-O arquivo `.env` não deve ser enviado para o GitHub.
+O arquivo `.env` é local e não deve ser enviado para o GitHub.
 
-## Subir o banco com Docker Compose
+## Subir o Banco
 
 ```powershell
 docker compose up -d
@@ -76,21 +84,15 @@ air_ops
 
 ## Rodar a API
 
-No PowerShell, defina a senha do banco na sessão atual:
+No PowerShell:
 
 ```powershell
 $env:POSTGRES_PASSWORD='1234'
-```
-
-Depois rode:
-
-```powershell
+$env:JWT_SECRET='air-ops-system-local-dev-secret-1234567890'
 .\mvnw spring-boot:run
 ```
 
-## Rodar pelo IntelliJ IDEA
-
-Você também pode rodar a aplicação diretamente pelo IntelliJ IDEA usando a classe:
+Pelo IntelliJ IDEA, rode a classe:
 
 ```txt
 AirOpsSystemApplication
@@ -108,21 +110,92 @@ Se o reinício automático não acontecer ao salvar, use:
 Build > Build Project
 ```
 
-ou o atalho:
+ou:
 
 ```txt
 Ctrl + F9
 ```
 
-## Testar a rota
+## Endpoints
 
-Com a aplicação rodando, acesse:
+### Cadastro
 
 ```txt
-http://localhost:8080/asd/test
+POST /auth/register
 ```
 
-Retorno esperado:
+Body:
+
+```json
+{
+  "name": "Pedro",
+  "email": "pedro@email.com",
+  "password": "123456"
+}
+```
+
+Resposta:
+
+```json
+{
+  "token": "jwt_aqui"
+}
+```
+
+### Login
+
+```txt
+POST /auth/login
+```
+
+Body:
+
+```json
+{
+  "email": "pedro@email.com",
+  "password": "123456"
+}
+```
+
+Resposta:
+
+```json
+{
+  "token": "jwt_aqui"
+}
+```
+
+### Perfil do Usuário Autenticado
+
+```txt
+GET /me
+```
+
+Essa rota é protegida. Envie o token no header:
+
+```txt
+Authorization: Bearer jwt_aqui
+```
+
+Resposta:
+
+```json
+{
+  "id": "uuid-do-usuario",
+  "name": "Pedro",
+  "email": "pedro@email.com",
+  "role": "TRAINEE",
+  "createdAt": "2026-05-20T17:00:00"
+}
+```
+
+### Rota de Teste Protegida
+
+```txt
+GET /asd/test
+```
+
+Resposta:
 
 ```txt
 API funcionando
@@ -136,27 +209,63 @@ Com a aplicação rodando, acesse:
 http://localhost:8080/swagger-ui/index.html
 ```
 
-No Swagger, procure:
+Fluxo de teste:
+
+1. Execute `POST /auth/register` ou `POST /auth/login`.
+2. Copie o token retornado.
+3. Clique em `Authorize`.
+4. Cole o token JWT.
+5. Execute uma rota protegida, como `GET /me`.
+
+## Segurança
+
+O projeto usa JWT com autenticação stateless.
+
+Rotas liberadas:
 
 ```txt
-GET /asd/test
+/auth/**
+/swagger-ui/**
+/swagger-ui.html
+/v3/api-docs/**
 ```
 
-Clique em `Try it out` e depois em `Execute`.
+Todas as demais rotas exigem token JWT válido.
 
-## Observação sobre segurança
+## Erros Padronizados
 
-O projeto já possui Spring Security. Enquanto não houver uma configuração própria de segurança, algumas rotas podem
-pedir login automaticamente.
+A API possui handler global para retornar erros em formato consistente.
 
-Quando isso acontecer, use o usuário padrão:
+Exemplo:
 
-```txt
-user
+```json
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Email ou senha inválidos",
+  "path": "/auth/login",
+  "timestamp": "2026-05-20T17:00:00"
+}
 ```
 
-A senha aparece no terminal ao iniciar a aplicação, em uma linha parecida com:
+Casos tratados:
+
+- Email já cadastrado.
+- Credenciais inválidas.
+- Dados inválidos enviados nos DTOs.
+
+## Validações
+
+Os DTOs de autenticação validam:
+
+- campos obrigatórios;
+- formato de email;
+- tamanho mínimo da senha no cadastro.
+
+## Desenvolvimento
+
+Arquivos locais de controle, como `todo.md` e `todo2.md`, são ignorados pelo Git através da regra:
 
 ```txt
-Using generated security password: ...
+todo*.md
 ```

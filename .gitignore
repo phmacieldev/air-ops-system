@@ -1,5 +1,5 @@
 HELP.md
-todo.md
+todo*.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
