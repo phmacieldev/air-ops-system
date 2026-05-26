@@ -45,6 +45,14 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(status).body(error);
   }
 
+  @ExceptionHandler(RuntimeException.class)
+  public ResponseEntity<ApiErrorDTO> handleRuntimeException(
+      RuntimeException exception,
+      HttpServletRequest request
+  ) {
+    return buildError(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiErrorDTO> handleValidation(
       MethodArgumentNotValidException exception,
