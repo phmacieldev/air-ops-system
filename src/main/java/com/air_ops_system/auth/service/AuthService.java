@@ -52,4 +52,8 @@ public class AuthService {
 
     return new AuthResponseDTO(token);
   }
+
+  public AuthResponseDTO refresh(User user) {
+    return new AuthResponseDTO(tokenService.generateToken(user));
+  }
 }
