@@ -149,6 +149,8 @@ public class ReportService {
         r.getId(),
         r.getPilot().getFullName(),
         r.getPilot().getCallsign(),
+        r.getPilot().getRank().getName(),
+        r.getPilot().getAccumulatedScore(),
         r.getFlightLog().getFlightId(),
         r.getSeizures(),
         r.getChases(),

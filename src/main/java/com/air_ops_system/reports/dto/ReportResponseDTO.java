@@ -10,6 +10,8 @@ public record ReportResponseDTO(
     UUID id,
     String pilotName,
     String pilotCallsign,
+    String pilotRank,
+    int pilotAccumulatedScore,
     UUID flightId,
     int seizures,
     int chases,
