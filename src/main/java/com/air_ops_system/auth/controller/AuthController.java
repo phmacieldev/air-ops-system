@@ -7,6 +7,8 @@ import com.air_ops_system.auth.service.AuthService;
 import com.air_ops_system.users.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,5 +38,14 @@ public class AuthController {
   public AuthResponseDTO refresh(Authentication authentication) {
     User user = (User) authentication.getPrincipal();
     return authService.refresh(user);
+  }
+
+  @PostMapping("/setup")
+  public ResponseEntity<AuthResponseDTO> setup(@RequestBody @Valid RegisterRequestDTO dto) {
+    try {
+      return ResponseEntity.ok(authService.setup(dto));
+    } catch (IllegalStateException e) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
   }
 }

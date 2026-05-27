@@ -56,4 +56,21 @@ public class AuthService {
   public AuthResponseDTO refresh(User user) {
     return new AuthResponseDTO(tokenService.generateToken(user));
   }
+
+  public AuthResponseDTO setup(RegisterRequestDTO dto) {
+    if (userRepository.count() > 0) {
+      throw new IllegalStateException("Setup já realizado.");
+    }
+    if (userRepository.findByEmail(dto.email()).isPresent()) {
+      throw new EmailAlreadyExistsException();
+    }
+    User user = User.builder()
+        .name(dto.name())
+        .email(dto.email())
+        .password(passwordEncoder.encode(dto.password()))
+        .role(Role.LEAD)
+        .build();
+    User saved = userRepository.save(user);
+    return new AuthResponseDTO(tokenService.generateToken(saved));
+  }
 }
