@@ -11,7 +11,7 @@ Controla pilotos, protocolos de voo, relatórios de desempenho, progressão de r
 - Java 21 + Spring Boot 4.0.6
 - Spring Security 7 (JWT stateless, `@PreAuthorize`)
 - Spring Data JPA + Hibernate
-- PostgreSQL (Docker via `spring-boot-docker-compose`)
+- PostgreSQL — Supabase em produção, Docker local
 - Lombok, Bean Validation
 - Springdoc OpenAPI / Swagger
 
@@ -35,17 +35,15 @@ Controla pilotos, protocolos de voo, relatórios de desempenho, progressão de r
 
 ### 1. Variáveis de Ambiente
 
-Crie `.env` na raiz do projeto (use `.env.example` como base):
+Crie `.env` na raiz (use `.env.example` como base):
 
 ```env
 POSTGRES_DB=air_ops
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=1234
 JWT_SECRET=air-ops-system-local-dev-secret-1234567890
-DISCORD_WEBHOOK_REPORTS=https://discord.com/api/webhooks/...
+CORS_ALLOWED_ORIGIN=http://localhost:3000
 ```
-
-O `.env` é ignorado pelo Git.
 
 ### 2. Subir o Banco
 
@@ -56,12 +54,39 @@ docker compose up -d
 ### 3. Rodar a API
 
 ```powershell
-$env:POSTGRES_PASSWORD='1234'
-$env:JWT_SECRET='air-ops-system-local-dev-secret-1234567890'
 .\mvnw spring-boot:run
 ```
 
-A API sobe em `http://localhost:8080`.
+Spring Boot sobe em `http://localhost:8080` e auto-cria as tabelas via `ddl-auto=update`.
+
+---
+
+## Deploy (Render + Supabase)
+
+### Banco — Supabase
+
+1. Crie um projeto em [supabase.com](https://supabase.com)
+2. Vá em **Project Settings → Database → Connection string → JDBC**
+3. Copie a URL no formato: `jdbc:postgresql://db.[ref].supabase.co:5432/postgres`
+4. Adicione `?sslmode=require` ao final
+
+### Backend — Render
+
+1. Crie um **Web Service** no [Render](https://render.com) apontando para este repositório
+2. Selecione **Docker** como ambiente (usa o `Dockerfile` da raiz)
+3. Configure as variáveis de ambiente:
+
+| Variável | Valor |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `prod` |
+| `DATABASE_URL` | `jdbc:postgresql://db.[ref].supabase.co:5432/postgres?sslmode=require` |
+| `POSTGRES_USER` | `postgres` |
+| `POSTGRES_PASSWORD` | senha do banco Supabase |
+| `JWT_SECRET` | string aleatória segura (mín. 32 chars) |
+| `CORS_ALLOWED_ORIGIN` | URL do frontend na Vercel (ex: `https://asd.vercel.app`) |
+| `DISCORD_WEBHOOK_REPORTS` | URL do webhook (opcional) |
+
+4. Faça o deploy — as tabelas são criadas automaticamente no primeiro start.
 
 ---
 
@@ -79,10 +104,11 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 
 ### Auth
 
-| Método | Rota           | Acesso  |
-|--------|----------------|---------|
-| POST   | /auth/register | Público |
-| POST   | /auth/login    | Público |
+| Método | Rota            | Acesso           |
+|--------|-----------------|------------------|
+| POST   | /auth/login     | Público          |
+| POST   | /auth/register  | LEAD, SUPERVISOR |
+| POST   | /auth/refresh   | Autenticado      |
 
 ### Usuários
 
@@ -104,6 +130,12 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 | PUT    | /pilots/{id} | LEAD, SUPERVISOR |
 | DELETE | /pilots/{id} | LEAD             |
 
+### Ranks
+
+| Método | Rota   | Acesso      |
+|--------|--------|-------------|
+| GET    | /ranks | Autenticado |
+
 ### Voos (FlightLog)
 
 | Método | Rota                 | Acesso           |
@@ -119,17 +151,17 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 
 ### Relatórios de Desempenho
 
-| Método | Rota                     | Acesso           |
-|--------|--------------------------|------------------|
-| GET    | /reports                 | Autenticado      |
-| GET    | /reports/pilot/{pilotId} | Autenticado      |
-| POST   | /reports                 | Autenticado      |
-| POST   | /reports/{id}/review     | LEAD, SUPERVISOR |
-| DELETE | /reports/{id}            | LEAD             |
+| Método | Rota                 | Acesso           |
+|--------|----------------------|------------------|
+| GET    | /reports             | Autenticado      |
+| GET    | /reports/pilot/{id}  | Autenticado      |
+| POST   | /reports             | Autenticado      |
+| POST   | /reports/{id}/review | LEAD, SUPERVISOR |
+| DELETE | /reports/{id}        | LEAD             |
 
-**Fórmula de score:** `seizures×5 + chases×3 + operations×3 − accidents×5`
+**Fórmula de score:** `apreensões×5 + perseguições×3 + operações×3 − acidentes×5`
 
-**Progressão automática por score acumulado:**
+**Progressão automática:**
 
 | Score     | Rank           |
 |-----------|----------------|
@@ -138,8 +170,7 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 | 600 – 999 | PILOT_PLENO    |
 | 1000+     | PILOT_SENIOR   |
 
-> Pilotos com nível ≥ 5 (INSTRUCTOR, SUPERVISOR, LEAD) são imunes à promoção/rebaixamento automático.
-> Ao aprovar um relatório, o webhook do Discord é disparado se `DISCORD_WEBHOOK_REPORTS` estiver configurado.
+> Pilotos com nível ≥ 5 (INSTRUCTOR, SUPERVISOR, LEAD) são imunes à promoção/rebaixamento automático e iniciam com 1000 pts ao serem promovidos.
 
 ### Documentos
 
@@ -149,8 +180,6 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 | POST   | /documents      | LEAD        |
 | PUT    | /documents/{id} | LEAD        |
 | DELETE | /documents/{id} | LEAD        |
-
-> Documentos são links para Google Docs (SOP, manuais, certificados, avaliações).
 
 ---
 
@@ -162,7 +191,7 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
   "error": "Bad Request",
   "message": "Piloto não encontrado.",
   "path": "/pilots/uuid-aqui",
-  "timestamp": "2026-05-26T17:00:00"
+  "timestamp": "2026-05-27T00:00:00"
 }
 ```
 
@@ -172,7 +201,7 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 
 ```
 com.air_ops_system/
-  auth/       — registro, login, JWT, filtro
+  auth/       — registro, login, refresh, JWT, filtro
   users/      — perfil, listagem, deleção
   pilots/     — CRUD de pilotos, ranks
   flights/    — protocolos de voo

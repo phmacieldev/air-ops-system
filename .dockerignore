@@ -1,0 +1,7 @@
+target/
+.git/
+.mvn/
+compose.yaml
+.env
+.env.example
+*.md
