@@ -1,0 +1,1 @@
+ALTER TABLE flight_log ALTER COLUMN end_at DROP NOT NULL;
