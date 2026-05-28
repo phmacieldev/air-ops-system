@@ -3,6 +3,7 @@ package com.air_ops_system.reports.controller;
 import com.air_ops_system.reports.dto.ReportCreateDTO;
 import com.air_ops_system.reports.dto.ReportResponseDTO;
 import com.air_ops_system.reports.dto.ReportReviewDTO;
+import com.air_ops_system.reports.dto.ReportUpdateDTO;
 import com.air_ops_system.reports.service.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,12 @@ public class ReportController {
   @PostMapping
   public ResponseEntity<ReportResponseDTO> createReport(@RequestBody @Valid ReportCreateDTO dto) {
     return ResponseEntity.status(HttpStatus.CREATED).body(reportService.createReport(dto));
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<ReportResponseDTO> updateReport(@PathVariable UUID id,
+                                                        @RequestBody @Valid ReportUpdateDTO dto) {
+    return ResponseEntity.ok(reportService.updateReport(id, dto));
   }
 
   @PostMapping("/{id}/review")

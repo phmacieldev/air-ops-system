@@ -1,6 +1,7 @@
 package com.air_ops_system.flights.domain;
 
 public enum FlightType {
+  PATRULHA,
   BANK_FLEECA_10_90,
   PURSUIT_10_94,
   BOOSTING_S,

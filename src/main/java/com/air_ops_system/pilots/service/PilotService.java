@@ -71,11 +71,6 @@ public class PilotService {
       Rank rank = rankRepository.findById(dto.rankId())
           .orElseThrow(() -> new RuntimeException("Rank não encontrado."));
       pilot.setRank(rank);
-
-      List<String> highRanks = List.of("LEAD", "SUPERVISOR", "INSTRUCTOR");
-      if (highRanks.contains(rank.getName()) && pilot.getAccumulatedScore() < 1000) {
-        pilot.setAccumulatedScore(1000);
-      }
     }
 
     if (dto.profileImageUrl() != null) {

@@ -107,8 +107,11 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 | Método | Rota            | Acesso           |
 |--------|-----------------|------------------|
 | POST   | /auth/login     | Público          |
+| POST   | /auth/setup     | Público (falha se já existe algum usuário) |
 | POST   | /auth/register  | LEAD, SUPERVISOR |
 | POST   | /auth/refresh   | Autenticado      |
+
+> `POST /auth/setup` cria o primeiro usuário LEAD. Retorna 403 se o banco já tiver usuários — use apenas na primeira configuração da instância.
 
 ### Usuários
 
@@ -138,16 +141,23 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 
 ### Voos (FlightLog)
 
-| Método | Rota                 | Acesso           |
-|--------|----------------------|------------------|
-| GET    | /flights             | Autenticado      |
-| GET    | /flights/{id}        | Autenticado      |
-| POST   | /flights             | Autenticado      |
-| PUT    | /flights/{id}        | LEAD, SUPERVISOR |
-| POST   | /flights/{id}/review | LEAD, SUPERVISOR |
-| DELETE | /flights/{id}        | LEAD             |
+| Método | Rota                 | Acesso      |
+|--------|----------------------|-------------|
+| GET    | /flights             | Autenticado |
+| GET    | /flights/mine        | Autenticado |
+| GET    | /flights/{id}        | Autenticado |
+| POST   | /flights             | Autenticado |
+| PUT    | /flights/{id}        | Autenticado |
+| POST   | /flights/{id}/review | LEAD        |
+| DELETE | /flights/{id}        | LEAD        |
 
-> Ao aprovar um voo, a duração é calculada e somada ao `flightMinutes` do piloto.
+> `GET /flights/mine` retorna apenas os voos do piloto vinculado ao usuário autenticado.
+>
+> O campo `endAt` é opcional na criação — pode ser preenchido depois via `PUT /flights/{id}`.
+>
+> Voos nunca são aprovados automaticamente, independente do rank do piloto.
+>
+> Ao aprovar um voo com `endAt` definido, a duração é calculada e somada ao `flightMinutes` do piloto.
 
 ### Relatórios de Desempenho
 
@@ -156,8 +166,11 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 | GET    | /reports             | Autenticado      |
 | GET    | /reports/pilot/{id}  | Autenticado      |
 | POST   | /reports             | Autenticado      |
+| PUT    | /reports/{id}        | Autenticado      |
 | POST   | /reports/{id}/review | LEAD, SUPERVISOR |
 | DELETE | /reports/{id}        | LEAD             |
+
+> `PUT /reports/{id}` edita os campos de um relatório com status PENDING. Retorna erro se o relatório já foi aprovado ou rejeitado.
 
 **Fórmula de score:** `apreensões×5 + perseguições×3 + operações×3 − acidentes×5`
 
@@ -170,7 +183,7 @@ Fluxo: `POST /auth/login` → copiar token → clicar em **Authorize** → colar
 | 600 – 999 | PILOT_PLENO    |
 | 1000+     | PILOT_SENIOR   |
 
-> Pilotos com nível ≥ 5 (INSTRUCTOR, SUPERVISOR, LEAD) são imunes à promoção/rebaixamento automático e iniciam com 1000 pts ao serem promovidos.
+> Pilotos com nível ≥ 5 (INSTRUCTOR, SUPERVISOR, LEAD) são imunes à promoção/rebaixamento automático. O score desses pilotos **não é rastreado** — permanece 0 independente dos relatórios aprovados.
 
 ### Documentos
 

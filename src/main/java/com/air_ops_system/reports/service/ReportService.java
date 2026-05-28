@@ -11,6 +11,7 @@ import com.air_ops_system.reports.domain.PerformanceReport;
 import com.air_ops_system.reports.domain.ReportStatus;
 import com.air_ops_system.reports.dto.ReportCreateDTO;
 import com.air_ops_system.reports.dto.ReportResponseDTO;
+import com.air_ops_system.reports.dto.ReportUpdateDTO;
 import com.air_ops_system.reports.repository.PerformanceReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -74,22 +75,20 @@ public class ReportService {
 
     PerformanceReport saved = reportRepository.save(report);
 
-    // Recalcula score acumulado somando TODOS os relatórios aprovados do piloto
     Pilot pilot = report.getPilot();
-    int accumulatedScore = reportRepository
-        .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
-        .stream()
-        .mapToInt(PerformanceReport::getScore)
-        .sum();
 
-    pilot.setAccumulatedScore(accumulatedScore);
-
-    // Auto-promoção/rebaixamento — só para ranks com hierarchyLevel < IMMUNE_LEVEL
+    // Score acumulado e auto-promoção só se aplicam a ranks operacionais (abaixo de IMMUNE_LEVEL)
     if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
-      pilot.setRank(determineRankByScore(accumulatedScore));
-    }
+      int accumulatedScore = reportRepository
+          .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
+          .stream()
+          .mapToInt(PerformanceReport::getScore)
+          .sum();
 
-    pilotRepository.save(pilot);
+      pilot.setAccumulatedScore(accumulatedScore);
+      pilot.setRank(determineRankByScore(accumulatedScore));
+      pilotRepository.save(pilot);
+    }
 
     // Dispara webhook Discord
     discordWebhookService.sendReportApproved(saved);
@@ -107,6 +106,22 @@ public class ReportService {
     return reportRepository.findByPilot(pilot).stream().map(this::toDTO).toList();
   }
 
+  public ReportResponseDTO updateReport(UUID id, ReportUpdateDTO dto) {
+    PerformanceReport report = reportRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Relatório não encontrado."));
+
+    if (report.getStatus() != ReportStatus.PENDING) {
+      throw new RuntimeException("Apenas relatórios pendentes podem ser editados.");
+    }
+
+    report.setSeizures(dto.seizures());
+    report.setChases(dto.chases());
+    report.setOperations(dto.operations());
+    report.setAccidents(dto.accidents());
+
+    return toDTO(reportRepository.save(report));
+  }
+
   public void deleteReport(UUID id) {
     PerformanceReport report = reportRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Relatório não encontrado."));
@@ -116,7 +131,7 @@ public class ReportService {
 
     reportRepository.delete(report);
 
-    if (wasApproved) {
+    if (wasApproved && pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
       int accumulatedScore = reportRepository
           .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
           .stream()
@@ -124,11 +139,7 @@ public class ReportService {
           .sum();
 
       pilot.setAccumulatedScore(accumulatedScore);
-
-      if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
-        pilot.setRank(determineRankByScore(accumulatedScore));
-      }
-
+      pilot.setRank(determineRankByScore(accumulatedScore));
       pilotRepository.save(pilot);
     }
   }

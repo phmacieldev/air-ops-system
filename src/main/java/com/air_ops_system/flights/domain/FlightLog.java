@@ -36,7 +36,7 @@ public class FlightLog {
   @Column(nullable = false)
   LocalDateTime startAt;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   LocalDateTime endAt;
 
   @Column

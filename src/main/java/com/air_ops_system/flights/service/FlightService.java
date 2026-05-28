@@ -36,6 +36,14 @@ public class FlightService {
     return toDTO(flight);
   }
 
+  public List<FlightResponseDTO> getFlightsByPilotEmail(String email) {
+    Pilot pilot = pilotRepository.findByUserEmail(email)
+        .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
+    return flightLogRepository.findByPilot(pilot).stream()
+        .map(this::toDTO)
+        .toList();
+  }
+
   public void deleteFlight(UUID id) {
     FlightLog flight = flightLogRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Voo não encontrado."));
@@ -46,19 +54,10 @@ public class FlightService {
     Pilot pilot = pilotRepository.findByUserEmail(dto.pilotEmail())
         .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
 
-    Role role = pilot.getUser().getRole();
-
-    FlightStatus status = role == Role.LEAD
-        ? FlightStatus.APPROVED
-        : FlightStatus.PENDING;
-
-
     FlightLog flight = FlightLog.builder()
         .pilot(pilot)
         .aircraft(dto.aircraft())
         .flightType(dto.flightType())
-        .flightStatus(status)
-        .approvedBy(status == FlightStatus.APPROVED ? pilot : null)
         .startAt(dto.startedAt())
         .endAt(dto.endAt())
         .notes(dto.notes())
@@ -99,7 +98,7 @@ public class FlightService {
       throw new RuntimeException("Sem permissão para aprovar.");
     }
 
-    if (dto.status() == FlightStatus.APPROVED) {
+    if (dto.status() == FlightStatus.APPROVED && flight.getEndAt() != null) {
       long duration = ChronoUnit.MINUTES.between(flight.getStartAt(), flight.getEndAt());
       Pilot pilot = flight.getPilot();
       pilot.setFlightMinutes(pilot.getFlightMinutes() + (int) duration);

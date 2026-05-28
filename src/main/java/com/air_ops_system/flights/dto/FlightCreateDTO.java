@@ -21,7 +21,6 @@ public record FlightCreateDTO(
     @NotNull
     LocalDateTime startedAt,
 
-    @NotNull
     LocalDateTime endAt,
 
     String notes
