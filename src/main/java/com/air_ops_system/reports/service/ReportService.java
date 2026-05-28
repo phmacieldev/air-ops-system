@@ -11,6 +11,7 @@ import com.air_ops_system.reports.domain.PerformanceReport;
 import com.air_ops_system.reports.domain.ReportStatus;
 import com.air_ops_system.reports.dto.ReportCreateDTO;
 import com.air_ops_system.reports.dto.ReportResponseDTO;
+import com.air_ops_system.reports.dto.ReportUpdateDTO;
 import com.air_ops_system.reports.repository.PerformanceReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -105,6 +106,22 @@ public class ReportService {
     Pilot pilot = pilotRepository.findById(pilotId)
         .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
     return reportRepository.findByPilot(pilot).stream().map(this::toDTO).toList();
+  }
+
+  public ReportResponseDTO updateReport(UUID id, ReportUpdateDTO dto) {
+    PerformanceReport report = reportRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Relatório não encontrado."));
+
+    if (report.getStatus() != ReportStatus.PENDING) {
+      throw new RuntimeException("Apenas relatórios pendentes podem ser editados.");
+    }
+
+    report.setSeizures(dto.seizures());
+    report.setChases(dto.chases());
+    report.setOperations(dto.operations());
+    report.setAccidents(dto.accidents());
+
+    return toDTO(reportRepository.save(report));
   }
 
   public void deleteReport(UUID id) {
