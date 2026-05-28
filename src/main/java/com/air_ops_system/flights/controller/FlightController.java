@@ -5,11 +5,13 @@ import com.air_ops_system.flights.dto.FlightResponseDTO;
 import com.air_ops_system.flights.dto.FlightReviewDTO;
 import com.air_ops_system.flights.dto.FlightUpdateDTO;
 import com.air_ops_system.flights.service.FlightService;
+import com.air_ops_system.users.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +28,12 @@ public class FlightController {
   @GetMapping
   public ResponseEntity<List<FlightResponseDTO>> getAllFlights() {
     return ResponseEntity.ok(flightService.getAllFlights());
+  }
+
+  @GetMapping("/mine")
+  public ResponseEntity<List<FlightResponseDTO>> getMyFlights(Authentication authentication) {
+    User user = (User) authentication.getPrincipal();
+    return ResponseEntity.ok(flightService.getFlightsByPilotEmail(user.getEmail()));
   }
 
   @GetMapping("/{id}")

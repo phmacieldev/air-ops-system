@@ -36,6 +36,14 @@ public class FlightService {
     return toDTO(flight);
   }
 
+  public List<FlightResponseDTO> getFlightsByPilotEmail(String email) {
+    Pilot pilot = pilotRepository.findByUserEmail(email)
+        .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
+    return flightLogRepository.findByPilot(pilot).stream()
+        .map(this::toDTO)
+        .toList();
+  }
+
   public void deleteFlight(UUID id) {
     FlightLog flight = flightLogRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Voo não encontrado."));
