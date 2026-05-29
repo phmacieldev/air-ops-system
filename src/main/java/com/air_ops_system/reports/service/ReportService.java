@@ -78,17 +78,19 @@ public class ReportService {
     Pilot pilot = report.getPilot();
 
     // Score acumulado e auto-promoção só se aplicam a ranks operacionais (abaixo de IMMUNE_LEVEL)
-    if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
-      int accumulatedScore = reportRepository
-          .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
-          .stream()
-          .mapToInt(PerformanceReport::getScore)
-          .sum();
+    int accumulatedScore = reportRepository
+        .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
+        .stream()
+        .mapToInt(PerformanceReport::getScore)
+        .sum();
 
-      pilot.setAccumulatedScore(accumulatedScore);
+    pilot.setAccumulatedScore(accumulatedScore);
+
+    if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
       pilot.setRank(determineRankByScore(accumulatedScore));
-      pilotRepository.save(pilot);
     }
+
+    pilotRepository.save(pilot);
 
     // Dispara webhook Discord
     discordWebhookService.sendReportApproved(saved);
@@ -131,7 +133,7 @@ public class ReportService {
 
     reportRepository.delete(report);
 
-    if (wasApproved && pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
+    if (wasApproved) {
       int accumulatedScore = reportRepository
           .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
           .stream()
@@ -139,7 +141,11 @@ public class ReportService {
           .sum();
 
       pilot.setAccumulatedScore(accumulatedScore);
-      pilot.setRank(determineRankByScore(accumulatedScore));
+
+      if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
+        pilot.setRank(determineRankByScore(accumulatedScore));
+      }
+
       pilotRepository.save(pilot);
     }
   }
