@@ -17,8 +17,9 @@ public record CertificationCreateDTO(
     @NotBlank(message = "Nome completo é obrigatório.")
     String fullName,
 
-    @NotBlank(message = "Discord ID é obrigatório.")
     String discordId,
+
+    String externalCallsign,
 
     String externalRank,
 
