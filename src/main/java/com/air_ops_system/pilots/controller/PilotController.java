@@ -35,6 +35,13 @@ public class PilotController {
     return ResponseEntity.ok(pilotService.getAllPilots());
   }
 
+  @GetMapping("/me")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<PilotResponseDTO> getMyPilot(Authentication authentication) {
+    User user = (User) authentication.getPrincipal();
+    return ResponseEntity.ok(pilotService.getMyPilot(user.getEmail()));
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<PilotResponseDTO> getPilotById(@PathVariable UUID id) {
     return ResponseEntity.ok(pilotService.getPilotById(id));
