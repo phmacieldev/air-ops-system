@@ -1,6 +1,7 @@
 package com.air_ops_system.reports.service;
 
 import com.air_ops_system.discord.service.DiscordWebhookService;
+import jakarta.transaction.Transactional;
 import com.air_ops_system.flights.domain.FlightLog;
 import com.air_ops_system.flights.repository.FlightLogRepository;
 import com.air_ops_system.pilots.domain.Pilot;
@@ -127,6 +128,7 @@ public class ReportService {
     return toDTO(reportRepository.save(report));
   }
 
+  @Transactional
   public void deleteReport(UUID id) {
     PerformanceReport report = reportRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Relatório não encontrado."));
@@ -135,7 +137,7 @@ public class ReportService {
       throw new RuntimeException("Apenas relatórios rejeitados podem ser deletados.");
     }
 
-    reportRepository.delete(report);
+    reportRepository.deleteById(id);
   }
 
   private Rank determineRankByScore(int score) {

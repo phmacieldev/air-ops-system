@@ -9,7 +9,9 @@ import com.air_ops_system.flights.dto.FlightUpdateDTO;
 import com.air_ops_system.flights.repository.FlightLogRepository;
 import com.air_ops_system.pilots.domain.Pilot;
 import com.air_ops_system.pilots.repository.PilotRepository;
+import com.air_ops_system.reports.repository.PerformanceReportRepository;
 import com.air_ops_system.users.domain.Role;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class FlightService {
 
   private final FlightLogRepository flightLogRepository;
   private final PilotRepository pilotRepository;
+  private final PerformanceReportRepository reportRepository;
 
   public List<FlightResponseDTO> getAllFlights() {
     return flightLogRepository.findByOrderByCreatedAtDesc().stream()
@@ -45,12 +48,14 @@ public class FlightService {
         .toList();
   }
 
+  @Transactional
   public void deleteFlight(UUID id) {
     FlightLog flight = flightLogRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Voo não encontrado."));
     if (flight.getFlightStatus() != FlightStatus.REJECTED) {
       throw new RuntimeException("Apenas protocolos rejeitados podem ser deletados.");
     }
+    reportRepository.findByFlightLog(flight).ifPresent(reportRepository::delete);
     flightLogRepository.delete(flight);
   }
 
