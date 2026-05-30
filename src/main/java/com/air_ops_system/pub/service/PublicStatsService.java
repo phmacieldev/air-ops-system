@@ -2,6 +2,7 @@ package com.air_ops_system.pub.service;
 
 import com.air_ops_system.pilots.domain.PilotStatus;
 import com.air_ops_system.pilots.repository.PilotRepository;
+import com.air_ops_system.users.domain.Role;
 import com.air_ops_system.pub.dto.PublicStatsDTO;
 import com.air_ops_system.reports.domain.ReportStatus;
 import com.air_ops_system.reports.repository.PerformanceReportRepository;
@@ -22,7 +23,7 @@ public class PublicStatsService {
   private final PerformanceReportRepository reportRepository;
 
   public PublicStatsDTO getStats() {
-    var allPilots  = pilotRepository.findAll();
+    var allPilots  = pilotRepository.findAllExcludingRoleSorted(Role.ADM);
     var allReports = reportRepository.findAll();
 
     int efetivo_total  = allPilots.size();

@@ -1,6 +1,8 @@
 package com.air_ops_system.auth.controller;
 
 import com.air_ops_system.auth.dto.AuthResponseDTO;
+import com.air_ops_system.auth.dto.ChangeEmailDTO;
+import com.air_ops_system.auth.dto.ChangePasswordDTO;
 import com.air_ops_system.auth.dto.LoginRequestDTO;
 import com.air_ops_system.auth.dto.RegisterRequestDTO;
 import com.air_ops_system.auth.service.AuthService;
@@ -11,10 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -24,7 +23,7 @@ public class AuthController {
   private final AuthService authService;
 
   @PostMapping("/register")
-  @PreAuthorize("hasAnyRole('LEAD', 'SUPERVISOR')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM', 'SUPERVISOR')")
   public AuthResponseDTO register(@RequestBody @Valid RegisterRequestDTO dto) {
     return authService.register(dto);
   }
@@ -38,6 +37,22 @@ public class AuthController {
   public AuthResponseDTO refresh(Authentication authentication) {
     User user = (User) authentication.getPrincipal();
     return authService.refresh(user);
+  }
+
+  @PatchMapping("/email")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<AuthResponseDTO> changeEmail(Authentication authentication,
+                                                     @RequestBody @Valid ChangeEmailDTO dto) {
+    User user = (User) authentication.getPrincipal();
+    return ResponseEntity.ok(authService.changeEmail(user, dto.currentPassword(), dto.newEmail()));
+  }
+
+  @PatchMapping("/password")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<AuthResponseDTO> changePassword(Authentication authentication,
+                                                        @RequestBody @Valid ChangePasswordDTO dto) {
+    User user = (User) authentication.getPrincipal();
+    return ResponseEntity.ok(authService.changePassword(user, dto.currentPassword(), dto.newPassword()));
   }
 
   @PostMapping("/setup")

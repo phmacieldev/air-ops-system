@@ -52,54 +52,54 @@ public class ReportService {
     return toDTO(reportRepository.save(report));
   }
 
-  public ReportResponseDTO reviewReport(UUID id, String reviewerEmail) {
+  public ReportResponseDTO reviewReport(UUID id, String reviewerEmail, ReportStatus newStatus) {
     PerformanceReport report = reportRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Relatório não encontrado."));
 
     if (report.getStatus() != ReportStatus.PENDING) {
-      throw new RuntimeException("Relatório já foi aprovado.");
+      throw new RuntimeException("Apenas relatórios pendentes podem ser revisados.");
+    }
+
+    if (newStatus != ReportStatus.APPROVED && newStatus != ReportStatus.REJECTED) {
+      throw new RuntimeException("Status inválido para revisão.");
     }
 
     Pilot reviewer = pilotRepository.findByUserEmail(reviewerEmail)
         .orElseThrow(() -> new RuntimeException("Revisor não encontrado."));
 
-    // Calcula score: seizures×5 + chases×3 + operations×3 − accidents×5
-    int score = report.getSeizures() * 5
-        + report.getChases() * 3
-        + report.getOperations() * 3
-        - report.getAccidents() * 5;
-
-    report.setScore(score);
-    report.setStatus(ReportStatus.APPROVED);
     report.setReviewedBy(reviewer);
+    report.setStatus(newStatus);
+
+    if (newStatus == ReportStatus.APPROVED) {
+      int score = report.getSeizures() * 5
+          + report.getChases() * 3
+          + report.getOperations() * 3
+          - report.getAccidents() * 5;
+      report.setScore(score);
+    }
 
     PerformanceReport saved = reportRepository.save(report);
 
-    Pilot pilot = report.getPilot();
-
-    // Score acumulado e auto-promoção só se aplicam a ranks operacionais (abaixo de IMMUNE_LEVEL)
-    int accumulatedScore = reportRepository
-        .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
-        .stream()
-        .mapToInt(PerformanceReport::getScore)
-        .sum();
-
-    pilot.setAccumulatedScore(accumulatedScore);
-
-    if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
-      pilot.setRank(determineRankByScore(accumulatedScore));
+    if (newStatus == ReportStatus.APPROVED) {
+      Pilot pilot = report.getPilot();
+      int accumulatedScore = reportRepository
+          .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
+          .stream()
+          .mapToInt(PerformanceReport::getScore)
+          .sum();
+      pilot.setAccumulatedScore(accumulatedScore);
+      if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
+        pilot.setRank(determineRankByScore(accumulatedScore));
+      }
+      pilotRepository.save(pilot);
+      discordWebhookService.sendReportApproved(saved);
     }
-
-    pilotRepository.save(pilot);
-
-    // Dispara webhook Discord
-    discordWebhookService.sendReportApproved(saved);
 
     return toDTO(saved);
   }
 
   public List<ReportResponseDTO> getAllReports() {
-    return reportRepository.findAll().stream().map(this::toDTO).toList();
+    return reportRepository.findByOrderByCreatedAtDesc().stream().map(this::toDTO).toList();
   }
 
   public List<ReportResponseDTO> getReportsByPilot(UUID pilotId) {
@@ -128,26 +128,11 @@ public class ReportService {
     PerformanceReport report = reportRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Relatório não encontrado."));
 
-    Pilot pilot = report.getPilot();
-    boolean wasApproved = report.getStatus() == ReportStatus.APPROVED;
+    if (report.getStatus() != ReportStatus.REJECTED) {
+      throw new RuntimeException("Apenas relatórios rejeitados podem ser deletados.");
+    }
 
     reportRepository.delete(report);
-
-    if (wasApproved) {
-      int accumulatedScore = reportRepository
-          .findByPilotAndStatus(pilot, ReportStatus.APPROVED)
-          .stream()
-          .mapToInt(PerformanceReport::getScore)
-          .sum();
-
-      pilot.setAccumulatedScore(accumulatedScore);
-
-      if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
-        pilot.setRank(determineRankByScore(accumulatedScore));
-      }
-
-      pilotRepository.save(pilot);
-    }
   }
 
   private Rank determineRankByScore(int score) {

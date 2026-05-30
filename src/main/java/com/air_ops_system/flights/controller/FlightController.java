@@ -53,14 +53,14 @@ public class FlightController {
   }
 
   @PostMapping("/{id}/review")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<FlightResponseDTO> reviewFlight(@PathVariable UUID id,
                                                         @RequestBody @Valid FlightReviewDTO dto) {
     return ResponseEntity.ok(flightService.reviewFlight(id, dto));
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<Void> deleteFlight(@PathVariable UUID id) {
     flightService.deleteFlight(id);
     return ResponseEntity.noContent().build();

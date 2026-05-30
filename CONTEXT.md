@@ -134,15 +134,30 @@ Documentos cadastrados (dados de produção):
 - SOP, Manual Trainee, Avaliação Trainee
 - Certificado Pursuit & VCB, Certificado Operational, Certificado Scene Control
 
-### 🔲 Parte 7 — Frontend (Next.js 15)
+### ✅ Parte 7 — Frontend (Next.js 16)
 
-- Login page
-- Dashboard com métricas
-- Roster (tabela: callsign, rank, status ativo/inativo)
-- Protocolo de voo
-- Relatórios com score e barra de progressão de rank
-- Painel individual do piloto
-- Página de documentos (grid de cards com link para Google Docs)
+- Login page com JWT
+- Dashboard com métricas (pilotos ativos, horas de voo, apreensões, acidentes, taxa de sucesso)
+- Roster em cards com avatar, callsign, rank badge, score e status
+- Protocolo de voo (tabela + modal de criação + modal de edição)
+- Relatórios com score, barra de progressão de rank e modal de edição
+- Página de documentos (grid de cards por categoria com link para Google Docs)
+- Status page
+- Middleware de autenticação (redirect automático para login)
+- Proxy Next.js para chamadas ao backend (evita CORS em prod)
+- Deploy: **Vercel** — https://air-ops-system-web.vercel.app
+
+### ✅ Parte 8 — Correções de produção
+
+- `PATRULHA` adicionado ao CHECK constraint `flight_log_flight_type_check` (Supabase SQL manual)
+- `end_at` tornado nullable no `flight_log` (Supabase SQL manual)
+- `accumulatedScore` agora atualiza para **todos os ranks** ao aprovar relatório; promoção automática continua só para ranks < IMMUNE_LEVEL
+- Flyway adicionado ao projeto (V1, V2, V3 migrations) — **atenção:** auto-configure do Spring Boot 4 não dispara o Flyway; `FlywayRunner.java` criado mas ainda não publicado
+
+### 🔲 Pendências conhecidas
+
+- **Flyway em prod não roda:** `FlywayRunner.java` (runner explícito via `ApplicationRunner`) foi criado localmente mas ainda não commitado. Enquanto não for publicado, qualquer alteração de schema/constraint precisará ser feita manualmente no Supabase.
+- **Score acumulado desatualizado:** pilotos que eram LEAD/SUPERVISOR antes do fix de hoje têm `accumulatedScore` antigo — só corrige ao aprovar o próximo relatório deles (ou via SQL manual no Supabase).
 
 ## Variáveis de ambiente (.env)
 

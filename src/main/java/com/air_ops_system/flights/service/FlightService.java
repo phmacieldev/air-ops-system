@@ -13,6 +13,7 @@ import com.air_ops_system.users.domain.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -25,7 +26,7 @@ public class FlightService {
   private final PilotRepository pilotRepository;
 
   public List<FlightResponseDTO> getAllFlights() {
-    return flightLogRepository.findAll().stream()
+    return flightLogRepository.findByOrderByCreatedAtDesc().stream()
         .map(this::toDTO)
         .toList();
   }
@@ -47,10 +48,17 @@ public class FlightService {
   public void deleteFlight(UUID id) {
     FlightLog flight = flightLogRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Voo não encontrado."));
+    if (flight.getFlightStatus() != FlightStatus.REJECTED) {
+      throw new RuntimeException("Apenas protocolos rejeitados podem ser deletados.");
+    }
     flightLogRepository.delete(flight);
   }
 
   public FlightResponseDTO createFlight(FlightCreateDTO dto) {
+    if (dto.startedAt().isAfter(LocalDateTime.now())) {
+      throw new RuntimeException("A data e hora de início não podem ser no futuro.");
+    }
+
     Pilot pilot = pilotRepository.findByUserEmail(dto.pilotEmail())
         .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
 
@@ -74,6 +82,10 @@ public class FlightService {
       throw new RuntimeException("Voo não pode ser editado.");
     }
 
+    if (dto.startedAt().isAfter(LocalDateTime.now())) {
+      throw new RuntimeException("A data e hora de início não podem ser no futuro.");
+    }
+
     flight.setAircraft(dto.aircraft());
     flight.setFlightType(dto.flightType());
     flight.setStartAt(dto.startedAt());
@@ -94,7 +106,7 @@ public class FlightService {
     Pilot approver = pilotRepository.findByUserEmail(dto.approverEmail())
         .orElseThrow(() -> new RuntimeException("Approver não encontrado."));
 
-    if (approver.getUser().getRole() != Role.LEAD) {
+    if (approver.getUser().getRole() != Role.LEAD && approver.getUser().getRole() != Role.ADM) {
       throw new RuntimeException("Sem permissão para aprovar.");
     }
 
