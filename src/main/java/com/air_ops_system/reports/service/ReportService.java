@@ -89,7 +89,10 @@ public class ReportService {
           .sum();
       pilot.setAccumulatedScore(accumulatedScore);
       if (pilot.getRank().getHierarchyLevel() < IMMUNE_LEVEL) {
-        pilot.setRank(determineRankByScore(accumulatedScore));
+        Rank promoted = determineRankByScore(accumulatedScore);
+        if (promoted.getHierarchyLevel() > pilot.getRank().getHierarchyLevel()) {
+          pilot.setRank(promoted);
+        }
       }
       pilotRepository.save(pilot);
       discordWebhookService.sendReportApproved(saved);
