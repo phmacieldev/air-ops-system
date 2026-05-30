@@ -32,8 +32,11 @@ public class Certification {
   @Column(nullable = false)
   private String fullName;
 
-  @Column(nullable = false)
+  @Column
   private String discordId;
+
+  @Column
+  private String externalCallsign;
 
   @Column
   private String externalRank;

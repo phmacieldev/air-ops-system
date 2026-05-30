@@ -11,6 +11,7 @@ public record CertificationResponseDTO(
     String memberCallsign,
     String fullName,
     String discordId,
+    String externalCallsign,
     String externalRank,
     String externalUnit,
     String certificateType,

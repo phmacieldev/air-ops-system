@@ -55,6 +55,7 @@ public class CertificationService {
         .member(member)
         .fullName(dto.fullName())
         .discordId(dto.discordId())
+        .externalCallsign(dto.externalCallsign())
         .externalRank(dto.externalRank())
         .externalUnit(dto.externalUnit())
         .certificateType(dto.certificateType())
@@ -85,6 +86,7 @@ public class CertificationService {
         c.getMember() != null ? c.getMember().getCallsign() : null,
         c.getFullName(),
         c.getDiscordId(),
+        c.getExternalCallsign(),
         c.getExternalRank(),
         c.getExternalUnit(),
         c.getCertificateType().name(),
