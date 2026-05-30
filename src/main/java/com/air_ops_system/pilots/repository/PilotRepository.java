@@ -17,9 +17,9 @@ public interface PilotRepository extends JpaRepository<Pilot, UUID> {
 
   Optional<Pilot> findByUserEmail(String email);
 
-  // Exclui ADM e ordena: score desc → hierarchyLevel desc → callsign asc
+  // Exclui ADM e ordena: hierarchyLevel desc → callsign asc
   @Query("SELECT p FROM Pilot p WHERE p.user.role <> :role " +
-         "ORDER BY p.accumulatedScore DESC, p.rank.hierarchyLevel DESC, p.callsign ASC")
+         "ORDER BY p.rank.hierarchyLevel DESC, p.callsign ASC")
   List<Pilot> findAllExcludingRoleSorted(@Param("role") Role role);
 
   List<Pilot> findByUserRoleNot(Role role);

@@ -61,6 +61,12 @@ public class PilotService {
     return toDTO(pilot);
   }
 
+  public PilotResponseDTO getMyPilot(String email) {
+    Pilot pilot = pilotRepository.findByUserEmail(email)
+        .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
+    return toDTO(pilot);
+  }
+
   public PilotResponseDTO updatePilot(UUID id, UpdatePilotDTO dto) {
     Pilot pilot = pilotRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));
