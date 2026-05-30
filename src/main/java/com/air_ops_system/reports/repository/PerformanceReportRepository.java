@@ -14,6 +14,8 @@ public interface PerformanceReportRepository extends JpaRepository<PerformanceRe
 
   Optional<PerformanceReport> findByFlightLog(FlightLog flightLog);
 
+  List<PerformanceReport> findByOrderByCreatedAtDesc();
+
   List<PerformanceReport> findByPilot(Pilot pilot);
 
   // Usada para recalcular o score acumulado após cada aprovação

@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface FlightLogRepository extends JpaRepository<FlightLog, UUID> {
+  List<FlightLog> findByOrderByCreatedAtDesc();
+
   List<FlightLog> findByPilot(Pilot pilot);
 
   List<FlightLog> findByFlightStatus(FlightStatus status);

@@ -45,14 +45,14 @@ public class ReportController {
   }
 
   @PostMapping("/{id}/review")
-  @PreAuthorize("hasAnyRole('SUPERVISOR', 'LEAD')")
+  @PreAuthorize("hasAnyRole('SUPERVISOR', 'LEAD', 'ADM')")
   public ResponseEntity<ReportResponseDTO> reviewReport(@PathVariable UUID id,
                                                         @RequestBody @Valid ReportReviewDTO dto) {
-    return ResponseEntity.ok(reportService.reviewReport(id, dto.reviewerEmail()));
+    return ResponseEntity.ok(reportService.reviewReport(id, dto.reviewerEmail(), dto.status()));
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<Void> deleteReport(@PathVariable UUID id) {
     reportService.deleteReport(id);
     return ResponseEntity.noContent().build();

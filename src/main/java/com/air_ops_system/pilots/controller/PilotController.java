@@ -3,12 +3,16 @@ package com.air_ops_system.pilots.controller;
 import com.air_ops_system.pilots.dto.CreatePilotDTO;
 import com.air_ops_system.pilots.dto.PilotResponseDTO;
 import com.air_ops_system.pilots.dto.UpdatePilotDTO;
+import com.air_ops_system.pilots.dto.UpdatePilotRankDTO;
+import com.air_ops_system.pilots.dto.UpdateProfileDTO;
 import com.air_ops_system.pilots.service.PilotService;
+import com.air_ops_system.users.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +25,7 @@ public class PilotController {
   private final PilotService pilotService;
 
   @PostMapping
-  @PreAuthorize("hasAnyRole('LEAD', 'SUPERVISOR')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM', 'SUPERVISOR')")
   public ResponseEntity<PilotResponseDTO> createPilot(@RequestBody @Valid CreatePilotDTO dto) {
     return ResponseEntity.status(HttpStatus.CREATED).body(pilotService.createPilot(dto));
   }
@@ -37,13 +41,29 @@ public class PilotController {
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasAnyRole('LEAD', 'SUPERVISOR')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM', 'SUPERVISOR')")
   public ResponseEntity<PilotResponseDTO> updatePilot(@PathVariable UUID id, @RequestBody @Valid UpdatePilotDTO dto) {
     return ResponseEntity.ok(pilotService.updatePilot(id, dto));
   }
 
+  @PatchMapping("/{id}/profile")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<PilotResponseDTO> updateOwnProfile(@PathVariable UUID id,
+                                                           @RequestBody @Valid UpdateProfileDTO dto,
+                                                           Authentication authentication) {
+    User user = (User) authentication.getPrincipal();
+    return ResponseEntity.ok(pilotService.updateOwnProfile(id, dto, user.getEmail()));
+  }
+
+  @PatchMapping("/{id}/rank")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
+  public ResponseEntity<PilotResponseDTO> updatePilotRank(@PathVariable UUID id,
+                                                          @RequestBody @Valid UpdatePilotRankDTO dto) {
+    return ResponseEntity.ok(pilotService.updatePilotRank(id, dto));
+  }
+
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<Void> deletePilot(@PathVariable UUID id) {
     pilotService.deletePilot(id);
     return ResponseEntity.noContent().build();

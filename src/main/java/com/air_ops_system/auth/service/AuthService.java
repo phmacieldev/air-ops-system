@@ -57,6 +57,27 @@ public class AuthService {
     return new AuthResponseDTO(tokenService.generateToken(user));
   }
 
+  public AuthResponseDTO changeEmail(User user, String currentPassword, String newEmail) {
+    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+      throw new InvalidCredentialsException();
+    }
+    if (userRepository.findByEmail(newEmail).isPresent()) {
+      throw new EmailAlreadyExistsException();
+    }
+    user.setEmail(newEmail);
+    User saved = userRepository.save(user);
+    return new AuthResponseDTO(tokenService.generateToken(saved));
+  }
+
+  public AuthResponseDTO changePassword(User user, String currentPassword, String newPassword) {
+    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+      throw new InvalidCredentialsException();
+    }
+    user.setPassword(passwordEncoder.encode(newPassword));
+    userRepository.save(user);
+    return new AuthResponseDTO(tokenService.generateToken(user));
+  }
+
   public AuthResponseDTO setup(RegisterRequestDTO dto) {
     if (userRepository.count() > 0) {
       throw new IllegalStateException("Setup já realizado.");

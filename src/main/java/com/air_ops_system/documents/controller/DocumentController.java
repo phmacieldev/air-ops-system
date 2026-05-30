@@ -28,20 +28,20 @@ public class DocumentController {
   }
 
   @PostMapping
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<DocumentResponseDTO> createDocument(@RequestBody @Valid DocumentCreateDTO dto) {
     return ResponseEntity.status(HttpStatus.CREATED).body(documentService.createDocument(dto));
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<DocumentResponseDTO> updateDocument(@PathVariable UUID id,
                                                             @RequestBody DocumentUpdateDTO dto) {
     return ResponseEntity.ok(documentService.updateDocument(id, dto));
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<Void> deleteDocument(@PathVariable UUID id) {
     documentService.deleteDocument(id);
     return ResponseEntity.noContent().build();

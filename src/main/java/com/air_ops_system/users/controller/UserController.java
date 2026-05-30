@@ -18,13 +18,13 @@ public class UserController {
   private final UserService userService;
 
   @GetMapping
-  @PreAuthorize("hasAnyRole('LEAD', 'SUPERVISOR')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM', 'SUPERVISOR')")
   public ResponseEntity<List<UserProfileDTO>> getAllUsers() {
     return ResponseEntity.ok(userService.getAllUsers());
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('LEAD')")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
     userService.deleteUser(id);
     return ResponseEntity.noContent().build();
