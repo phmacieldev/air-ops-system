@@ -84,6 +84,7 @@ public class CertificationService {
         c.getHolderType().name(),
         c.getMember() != null ? c.getMember().getId() : null,
         c.getMember() != null ? c.getMember().getCallsign() : null,
+        c.getMember() != null ? c.getMember().getProfileImageUrl() : null,
         c.getFullName(),
         c.getDiscordId(),
         c.getExternalCallsign(),

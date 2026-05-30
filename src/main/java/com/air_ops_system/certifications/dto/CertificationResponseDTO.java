@@ -9,6 +9,7 @@ public record CertificationResponseDTO(
     String holderType,
     UUID memberId,
     String memberCallsign,
+    String memberProfileImageUrl,
     String fullName,
     String discordId,
     String externalCallsign,
