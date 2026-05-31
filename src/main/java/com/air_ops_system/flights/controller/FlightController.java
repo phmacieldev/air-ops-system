@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +25,12 @@ import java.util.UUID;
 @PreAuthorize("isAuthenticated()")
 public class FlightController {
   private final FlightService flightService;
+
+  @GetMapping("/pending/count")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
+  public ResponseEntity<Map<String, Long>> getPendingCount() {
+    return ResponseEntity.ok(Map.of("count", flightService.countPendingFlights()));
+  }
 
   @GetMapping
   public ResponseEntity<PagedResponseDTO<FlightResponseDTO>> getAllFlights(

@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -23,6 +24,12 @@ import java.util.UUID;
 public class ReportController {
 
   private final ReportService reportService;
+
+  @GetMapping("/pending/count")
+  @PreAuthorize("hasAnyRole('SUPERVISOR', 'LEAD', 'ADM')")
+  public ResponseEntity<Map<String, Long>> getPendingCount() {
+    return ResponseEntity.ok(Map.of("count", reportService.countPendingReports()));
+  }
 
   @GetMapping
   public ResponseEntity<PagedResponseDTO<ReportResponseDTO>> getAllReports(

@@ -16,5 +16,7 @@ public interface FlightLogRepository extends JpaRepository<FlightLog, UUID> {
 
   List<FlightLog> findByFlightStatus(FlightStatus status);
 
+  long countByFlightStatus(FlightStatus status);
+
   Optional<FlightLog> findById(UUID id);
 }

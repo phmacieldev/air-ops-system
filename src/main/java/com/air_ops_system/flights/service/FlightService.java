@@ -10,6 +10,7 @@ import com.air_ops_system.flights.dto.FlightUpdateDTO;
 import com.air_ops_system.flights.repository.FlightLogRepository;
 import com.air_ops_system.pilots.domain.Pilot;
 import com.air_ops_system.pilots.repository.PilotRepository;
+import com.air_ops_system.discord.service.DiscordWebhookService;
 import com.air_ops_system.reports.repository.PerformanceReportRepository;
 import com.air_ops_system.users.domain.Role;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,7 @@ public class FlightService {
   private final FlightLogRepository flightLogRepository;
   private final PilotRepository pilotRepository;
   private final PerformanceReportRepository reportRepository;
+  private final DiscordWebhookService discordWebhookService;
 
   public PagedResponseDTO<FlightResponseDTO> getAllFlights(int page, int size) {
     Page<FlightLog> flightPage = flightLogRepository.findAll(
@@ -138,7 +140,11 @@ public class FlightService {
     flight.setApprovedBy(approver);
     flight.setFlightStatus(dto.status());
 
-    return toDTO(flightLogRepository.save(flight));
+    FlightLog saved = flightLogRepository.save(flight);
+    if (dto.status() == FlightStatus.APPROVED) {
+      discordWebhookService.sendFlightApproved(saved);
+    }
+    return toDTO(saved);
   }
 
   private FlightResponseDTO toDTO(FlightLog flight) {
@@ -155,5 +161,9 @@ public class FlightService {
         flight.getCreatedAt(),
         flight.getNotes()
     );
+  }
+
+  public long countPendingFlights() {
+    return flightLogRepository.countByFlightStatus(FlightStatus.PENDING);
   }
 }

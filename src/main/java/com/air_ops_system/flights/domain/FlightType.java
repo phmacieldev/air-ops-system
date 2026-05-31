@@ -7,5 +7,7 @@ public enum FlightType {
   BOOSTING_S,
   PALETO_BANK,
   BANK_68_10_90,
-  PATROL
+  PATROL,
+  TREINAMENTO,
+  COCAINE_RUN
 }

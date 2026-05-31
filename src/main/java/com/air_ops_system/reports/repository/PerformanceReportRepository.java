@@ -18,6 +18,8 @@ public interface PerformanceReportRepository extends JpaRepository<PerformanceRe
 
   List<PerformanceReport> findByPilot(Pilot pilot);
 
+  long countByStatus(ReportStatus status);
+
   // Usada para recalcular o score acumulado após cada aprovação
   List<PerformanceReport> findByPilotAndStatus(Pilot pilot, ReportStatus status);
 }

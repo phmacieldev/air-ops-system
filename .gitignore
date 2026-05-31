@@ -46,3 +46,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Screenshots tooling ###
+docs/node_modules/
+docs/package.json
+docs/package-lock.json
+docs/take-screenshots.mjs

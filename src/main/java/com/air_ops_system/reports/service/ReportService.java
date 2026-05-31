@@ -184,4 +184,8 @@ public class ReportService {
         r.getCreatedAt()
     );
   }
+
+  public long countPendingReports() {
+    return reportRepository.countByStatus(ReportStatus.PENDING);
+  }
 }

@@ -1,133 +1,111 @@
-# ASD Air Ops System
+<div align="center">
 
-Sistema de gestão operacional da **Air Support Division (ASD)** — unidade aérea de um servidor FiveM GTA RP temática americana (LSPD). Desenvolvido do zero como projeto real de portfólio, utilizando Claude Code como par de programação ao longo de todo o desenvolvimento.
+<h1>Air Ops System — API</h1>
 
-> **Contexto de migração de área:** Este projeto marca minha transição para desenvolvimento de software. Parti de zero conhecimento em Spring Boot e construí uma API REST completa com autenticação JWT, controle de acesso por roles, progressão de rank automática, webhooks Discord, e um frontend Next.js com deploy em produção — tudo documentado e versionado.
+<p>API REST para gestão operacional da unidade aérea <strong>ASD (Air Support Division)</strong> — LSPD · FiveM RP</p>
+
+[![Java](https://img.shields.io/badge/Java_21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot_4.0.6-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
+[![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com)
+[![CI](https://github.com/phmacieldev/air-ops-system/actions/workflows/ci.yml/badge.svg)](https://github.com/phmacieldev/air-ops-system/actions)
+
+</div>
 
 ---
 
-## Sistema em Produção
+## Preview
+
+| Swagger UI | Portal |
+|---|---|
+| ![Swagger](./docs/screenshots/swagger.png) | ![Portal](./docs/screenshots/dashboard.png) |
+
+---
+
+## Sobre
+
+O **Air Ops System** é um sistema de gestão operacional construído do zero como projeto de portfólio, resolvendo três problemas reais de uma organização com hierarquia de 8 níveis:
+
+1. **Rastreio de atividade** — cada membro registra protocolos de operação (missão, aeronave, horário), aprovados por líderes.
+2. **Progressão por mérito** — relatórios calculam score (`apreensões×5 + perseguições×3 + ops×3 − acidentes×5`) e o rank sobe automaticamente.
+3. **Transparência pública** — página `/status` exibe efetivo ativo, horas de voo e taxa de sucesso sem login, com auto-refresh a cada 60s.
+
+> Desenvolvido para a *Air Support Division* (ASD), unidade de apoio aéreo de um servidor FiveM GTA RP com temática policial americana (LSPD). Frontend em Next.js: [phmacieldev/air-ops-system-web](https://github.com/phmacieldev/air-ops-system-web)
 
 | Serviço | URL | Plataforma |
-|---------|-----|------------|
-| Frontend | https://air-ops-system-web.vercel.app | Vercel (Hobby) |
-| Backend API | https://air-ops-system.onrender.com | Render (Free) |
-| Banco de dados | Supabase PostgreSQL | Supabase (Free) |
-
-**Keep-alive:** UptimeRobot monitora o backend a cada 5 minutos para evitar o cold start do plano free do Render.
+|---|---|---|
+| Frontend | https://air-ops-system-web.vercel.app | Vercel |
+| Backend API | https://air-ops-system.onrender.com | Render |
+| Banco de dados | — | Supabase PostgreSQL |
 
 ---
 
-## O que o sistema faz
+## Funcionalidades
 
-A ASD é uma unidade hierarquizada com pilotos em diferentes ranks. O sistema resolve três problemas reais:
+### Autenticação e Conta
+- Registro/login com BCrypt + JWT stateless (24h)
+- `POST /auth/setup` — cria o primeiro LEAD; retorna 403 se já existirem usuários
+- Alteração de e-mail e senha com verificação da senha atual
 
-1. **Rastreio de atividade** — cada piloto registra protocolos de voo (missão, aeronave, horário). Aprovados por líderes.
-2. **Progressão por mérito** — relatórios de desempenho calculam score (`apreensões×5 + perseguições×3 + ops×3 − acidentes×5`). O rank sobe automaticamente conforme o score acumulado.
-3. **Transparência pública** — página `/status` exibe efetivo ativo, horas de voo e taxa de sucesso sem exigir login, atualiza a cada 60 segundos.
+### Pilotos e Ranks
+- CRUD completo de pilotos com perfil próprio (`GET /pilots/me`)
+- Hierarquia de 8 ranks com `hierarchyLevel` numérico
+- Progressão automática de rank por score acumulado; INSTRUCTOR+ são imunes
+- Role ADM — permissões de LEAD, mas **filtrada de toda listagem pública** via JPQL
+- Ordenação do roster: score desc → hierarchyLevel desc → callsign asc
+
+### Voos, Relatórios e Certificações
+- Protocolos de voo com validação de data/hora futura; tipos: PATRULHA, PURSUIT, BANK, BOOSTING_S, COCAINE_RUN, TREINAMENTO, PATROL
+- Relatórios de desempenho com score calculado na aprovação
+- Webhook Discord ao aprovar protocolo de voo e ao aprovar relatório (canais configuráveis por variável de ambiente)
+- Progressão automática de rank ao aprovar relatório
+- Certificações para membros (PURSUIT, OPERATIONAL, SCENE_CONTROL) e externos (COPILOT, TRANSPORT)
+- Badges de certificação exibidos no roster
+
+### Infraestrutura
+- **Paginação** em voos e relatórios com metadados de navegação
+- **Rate limiting** — 10 req/min no login, 100 req/min geral por IP (janela fixa)
+- **Health check** enriquecido com uptime e status do banco
+- **CORS** configurável por variável de ambiente
+- **Flyway** para migrações versionadas
+- **Swagger UI** automático via Springdoc
+- **CI** com GitHub Actions — build a cada push/PR
 
 ---
 
 ## Stack
 
-### Backend
-| Tecnologia | Versão | Por quê |
-|-----------|--------|---------|
-| Java | 21 | LTS atual; records, sealed classes, pattern matching |
-| Spring Boot | 4.0.6 | Auto-configuração, ecosystem maduro, fácil deploy via JAR |
-| Spring Security | 7.x | Stateless JWT com `@PreAuthorize` por método — simples e declarativo |
-| Spring Data JPA | — | Repositórios prontos, queries derivadas, sem SQL boilerplate |
-| PostgreSQL | 17/18 | Relacional, ACID, suporte nativo no Supabase |
-| Flyway | 11.x | Migrações versionadas — schema reproduzível em qualquer ambiente |
-| Lombok | — | Elimina boilerplate: `@Builder`, `@Getter`, `@Setter`, `@RequiredArgsConstructor` |
-| jjwt | 0.13 | Geração e validação de tokens JWT |
-| Springdoc OpenAPI | 2.x | Swagger UI automático a partir das anotações |
-
-### Frontend
-| Tecnologia | Versão | Por quê |
-|-----------|--------|---------|
-| Next.js | 16 | App Router, SSR/SSG, proxy de API integrado |
-| TypeScript | 5.x | Type safety, DX superior ao JS puro |
-| Tailwind CSS | 4.x | Utilitários direto no JSX, sem CSS files separados |
-| shadcn/ui | — | Componentes acessíveis sem overhead de uma biblioteca pesada |
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Java 21 |
+| Framework | Spring Boot 4 + Spring Security 7 |
+| Persistência | Spring Data JPA + PostgreSQL 18 |
+| Migrations | Flyway |
+| Auth | JWT (jjwt 0.13) |
+| Documentação | Springdoc OpenAPI 2 (Swagger UI) |
+| Build | Maven |
+| Containerização | Docker + Docker Compose |
+| Deploy | Render (API) + Supabase (banco prod) |
+| CI | GitHub Actions |
 
 ---
 
-## Hierarquia de Ranks e Permissões
+## Hierarquia de Ranks
 
 ```
 ADM          → permissões iguais ao LEAD; invisível no roster público
-LEAD         → acesso total; aprova voos/relatórios; altera ranks manualmente
+LEAD         → acesso total; aprova voos/relatórios; altera ranks
 SUPERVISOR   → gerencia roster; aprova relatórios
 INSTRUCTOR   → emite certificações; avalia trainees
-PILOT_SENIOR → voos e relatórios independentes
-PILOT_PLENO  → voos e relatórios independentes
-PILOT_STANDARD → voos e relatórios independentes
-TRAINEE      → protocolo de voo (precisa aprovação)
+PILOT_SENIOR → 1000+ pts
+PILOT_PLENO  → 600–999 pts
+PILOT_STANDARD → 200–599 pts
+TRAINEE      → 0–199 pts (protocolo exige aprovação)
 ```
 
-**Progressão automática por score acumulado** (pilotos com hierarchyLevel < 5):
-
-| Score     | Rank           |
-|-----------|----------------|
-| 0 – 199   | TRAINEE        |
-| 200 – 599 | PILOT_STANDARD |
-| 600 – 999 | PILOT_PLENO    |
-| 1000+     | PILOT_SENIOR   |
-
-INSTRUCTOR, SUPERVISOR e LEAD são imunes — seu rank só muda por ação manual de um LEAD/ADM.
-
----
-
-## Funcionalidades Implementadas
-
-### Autenticação e Conta
-- [x] Registro/login com BCrypt + JWT stateless
-- [x] Refresh token automático (interceptor no frontend + `POST /auth/refresh`)
-- [x] `POST /auth/setup` — cria o primeiro LEAD; retorna 403 se já existirem usuários (protege o bootstrap)
-- [x] `PATCH /auth/email` — troca e-mail com verificação de senha atual
-- [x] `PATCH /auth/password` — troca senha com verificação de senha atual
-
-### Pilotos e Ranks
-- [x] CRUD completo de pilotos
-- [x] Campo `grupo` calculado no backend (`resolveGrupo`): trainee / pilot / instructor / supervisor / lead / adm
-- [x] `PATCH /pilots/:id/rank` — LEAD/ADM alteram rank manualmente
-- [x] `PATCH /pilots/:id/profile` — piloto edita o próprio callsign e foto (sem tocar em status ou rank)
-- [x] Role ADM: permissões de LEAD, mas **filtrada da listagem pública** via `WHERE user.role != 'ADM'` na query — nunca aparece no roster
-- [x] Ordenação do roster: score desc → hierarchyLevel desc → callsign asc
-
-### Certificações
-- [x] Tipos para membros: `PURSUIT`, `OPERATIONAL`, `SCENE_CONTROL`
-- [x] Tipos para externos: `COPILOT`, `TRANSPORT`
-- [x] Emissão restrita a Instructor+ ; revogação restrita a LEAD/ADM
-- [x] Badges de certificação exibidos nos cards do roster
-
-### Protocolos de Voo
-- [x] Criação com validação de data/hora futura (backend + cliente)
-- [x] Aprovação/rejeição por LEAD/ADM; calcula `flightMinutes` do piloto na aprovação
-- [x] Deleção permitida apenas para status `REJECTED`
-- [x] `GET /flights/mine` — retorna só os voos do usuário autenticado
-
-### Relatórios de Desempenho
-- [x] Um relatório por voo; vinculado ao FlightLog via `@OneToOne`
-- [x] Score calculado na aprovação; acumulado recalculado em cascata
-- [x] Progressão automática de rank ao aprovar (exceto ranks imunes)
-- [x] Webhook Discord ao aprovar — embed com todos os dados do relatório
-- [x] Status `REJECTED` adicionado: rejeitados aparecem com badge vermelho e podem ser deletados por LEAD/ADM
-- [x] Deleção de APPROVED recalcula score acumulado e rank do piloto
-
-### Dashboard e Status Público
-- [x] Métricas em tempo real: pilotos ativos, horas de voo, apreensões, acidentes
-- [x] Ranking de score com desempate por rank e callsign
-- [x] Página pública `/status` sem autenticação — polling a cada 60s com countdown visual
-
-### UX e Frontend
-- [x] Dark theme militar: `#0a0d12` fundo, `#e8c97e` gold, `#1c2a3a` navy
-- [x] Layout responsivo (mobile + desktop) com sidebar colapsável
-- [x] Modais de confirmação com variantes `danger` e `warning`
-- [x] Contraste WCAG: labels de form em `#c8d6e5`, headers de tabela em `#8a9ab8`
-- [x] Proxy Next.js → backend (evita CORS em produção sem expor a URL da API)
-- [x] Cache client-side com TTL por endpoint
+Progressão automática para ranks com `hierarchyLevel < 5`. INSTRUCTOR, SUPERVISOR e LEAD só mudam por ação manual de um LEAD/ADM.
 
 ---
 
@@ -137,44 +115,35 @@ INSTRUCTOR, SUPERVISOR e LEAD são imunes — seu rank só muda por ação manua
 ┌─────────────────────────────────────────────────────────┐
 │                     Next.js (Vercel)                    │
 │  App Router · TypeScript · Tailwind · Client-side JWT   │
-│                                                         │
-│  /dashboard  /pilots  /flights  /reports                │
-│  /certifications  /documents  /settings  /status        │
 └────────────────────────┬────────────────────────────────┘
-                         │ HTTPS (proxy Next.js)
+                         │ HTTPS
 ┌────────────────────────▼────────────────────────────────┐
 │              Spring Boot 4 REST API (Render)             │
 │                                                         │
-│  JwtAuthenticationFilter → SecurityConfig               │
+│  RateLimitFilter → JwtAuthenticationFilter              │
 │  Controller → Service → Repository                      │
 │                                                         │
-│  Módulos: auth · users · pilots · flights               │
-│           reports · certifications · documents          │
-│           discord · pub (public stats)                  │
+│  auth · users · pilots · flights · reports              │
+│  certifications · documents · discord · pub             │
 └────────────────────────┬────────────────────────────────┘
                          │ JDBC + SSL
 ┌────────────────────────▼────────────────────────────────┐
 │              PostgreSQL (Supabase)                       │
-│  Flyway migrations · ddl-auto=update (dev)              │
+│  Flyway migrations · índices em score/status/role       │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### Decisões de design
 
-**Por que JWT stateless?**
-O Render free hiberna após 15 min de inatividade. Com sessões server-side, cada cold start invalidaria todas as sessões ativas. JWT stateless resolve isso — o token é válido independente do estado do servidor.
+**JWT stateless** — O Render free hiberna após 15 min. Com sessões server-side, cada cold start invalidaria todas as sessões ativas. JWT resolve isso: o token é válido independente do estado do servidor.
 
-**Por que `@PreAuthorize` por método em vez de regras no `SecurityConfig`?**
-Mais legível e mais fácil de manter. A regra de acesso fica junto ao método que ela protege, não em um arquivo centralizado que cresce indefinidamente.
+**`@PreAuthorize` por método** — A regra de acesso fica junto ao método que ela protege, não em um `SecurityConfig` que cresce indefinidamente.
 
-**Por que Flyway mesmo com `ddl-auto=update`?**
-`ddl-auto=update` não consegue reverter mudanças nem recriar constraints (ex: `CHECK` em enums PostgreSQL). Flyway garante que o schema em produção (Supabase) seja idêntico ao local, mesmo sem acesso SSH ao banco.
+**Flyway com `ddl-auto=update`** — `ddl-auto=update` não recria constraints (ex: `CHECK` em enums PostgreSQL). Flyway garante que o schema em produção seja idêntico ao local.
 
-**Por que o campo `grupo` existe se o frontend já tem o `rankName`?**
-Porque a lógica de grupo não é 1:1 com rank. ADM tem rank LEAD mas grupo "adm". Centralizar em `resolveGrupo()` no backend evita que cada cliente reimplemente a mesma regra de forma inconsistente.
+**Campo `grupo` no backend** — A lógica de grupo não é 1:1 com rank. ADM tem rank LEAD mas grupo "adm". Centralizar em `resolveGrupo()` evita que cada cliente reimplemente a mesma regra de forma inconsistente.
 
-**Por que filtrar ADM no banco e não no frontend?**
-O frontend pode ser bypassado. A regra `WHERE user.role != 'ADM'` na query JPQL garante que o ADM nunca apareça em nenhuma listagem, mesmo que o frontend seja inspecionado ou a API seja chamada diretamente.
+**Filtro de ADM no banco** — O frontend pode ser bypassado. `WHERE user.role != 'ADM'` na query JPQL garante que o ADM nunca apareça em nenhuma listagem, mesmo via chamada direta à API.
 
 ---
 
@@ -182,110 +151,73 @@ O frontend pode ser bypassado. A regra `WHERE user.role != 'ADM'` na query JPQL 
 
 ### Auth
 | Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
+|---|---|---|---|
 | POST | `/auth/setup` | Público | Cria primeiro LEAD. 403 se já existirem usuários |
 | POST | `/auth/login` | Público | Retorna JWT |
 | POST | `/auth/register` | LEAD/ADM/SUPERVISOR | Cadastra novo membro |
-| POST | `/auth/refresh` | Autenticado | Renova token |
-| PATCH | `/auth/email` | Autenticado | Altera e-mail (exige senha atual) |
-| PATCH | `/auth/password` | Autenticado | Altera senha (exige senha atual) |
+| PATCH | `/auth/email` | Autenticado | Altera e-mail |
+| PATCH | `/auth/password` | Autenticado | Altera senha |
 
 ### Pilotos
 | Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| GET | `/pilots` | Autenticado | Lista todos (exclui ADM), ordenado por score |
+|---|---|---|---|
+| GET | `/pilots` | Autenticado | Lista todos (exclui ADM) |
+| GET | `/pilots/me` | Autenticado | Perfil do usuário logado |
 | GET | `/pilots/:id` | Autenticado | Perfil completo |
-| POST | `/pilots` | LEAD/ADM/SUPERVISOR | Cria piloto |
-| PUT | `/pilots/:id` | LEAD/ADM/SUPERVISOR | Edição completa (callsign, status, rank, foto) |
+| PUT | `/pilots/:id` | LEAD/ADM/SUPERVISOR | Edita callsign, status e foto |
 | PATCH | `/pilots/:id/rank` | LEAD/ADM | Altera rank manualmente |
-| PATCH | `/pilots/:id/profile` | Autenticado (próprio) | Edita callsign e foto (sem rank/status) |
+| PATCH | `/pilots/:id/role` | LEAD/ADM | Altera role |
+| PATCH | `/pilots/:id/profile` | Autenticado (próprio) | Edita callsign e foto |
 | DELETE | `/pilots/:id` | LEAD/ADM | Remove piloto |
 
-### Voos, Relatórios, Certificações, Documentos
-Veja a documentação interativa em `/swagger-ui/index.html`.
+### Voos, Relatórios, Certificações
+Documentação interativa completa em `/swagger-ui/index.html`.
 
 ---
 
-## Rodando Localmente
+## Como Rodar Localmente
 
-### Pré-requisitos
-- Java 21
-- Docker Desktop
-- Node.js 20+
-
-### Backend
+**Pré-requisitos:** Java 21, Maven, Docker Desktop.
 
 ```bash
-# Clone o repositório
-git clone https://github.com/bokinhass/air-ops-system
+git clone https://github.com/phmacieldev/air-ops-system
 cd air-ops-system
 
-# Crie o .env na raiz (necessário para o Docker Compose)
-cat > .env << EOF
-POSTGRES_DB=air_ops
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=1234
-JWT_SECRET=air-ops-system-local-dev-secret-1234567890
-CORS_ALLOWED_ORIGIN=http://localhost:3000
-EOF
+cp .env.example .env
+# defaults já funcionam para dev local
 
-# Rodar — Spring Boot sobe o container PostgreSQL automaticamente
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
-O Spring Boot detecta o `compose.yaml`, sobe o container `air_ops_postgres` via Docker e aguarda o healthcheck antes de inicializar a API.
+O Spring Boot sobe o container PostgreSQL automaticamente via Docker Compose (`spring.docker.compose.enabled=true`).
 
-Acesse: `http://localhost:8080/swagger-ui/index.html`
+Acesse a documentação: `http://localhost:8080/swagger-ui/index.html`
 
-### Frontend
-
-```bash
-cd air-ops-system-web
-
-# Crie o .env.local
-echo "NEXT_PUBLIC_API_URL=http://localhost:8080" > .env.local
-
-npm install
-npm run dev
-```
-
-Acesse: `http://localhost:3000`
-
-### Primeiro acesso
+**Primeiro acesso** (banco vazio):
 
 ```bash
-# Cria o usuário LEAD inicial (só funciona com banco vazio)
 curl -X POST http://localhost:8080/auth/setup \
   -H "Content-Type: application/json" \
   -d '{"name":"Admin","email":"admin@asd.com","password":"senha123"}'
 ```
 
+> Se ocorrer erro de `app.jwt.secret not found`, rode `mvn clean compile` antes de subir.
+
 ---
 
-## Deploy
+## Variáveis de Ambiente
 
-### Banco — Supabase
-1. Crie um projeto em [supabase.com](https://supabase.com)
-2. Copie a connection string JDBC: `jdbc:postgresql://db.[ref].supabase.co:5432/postgres?sslmode=require`
+| Variável | Descrição | Padrão local |
+|---|---|---|
+| `POSTGRES_USER` | Usuário do banco | `postgres` |
+| `POSTGRES_PASSWORD` | Senha do banco | `1234` |
+| `POSTGRES_DB` | Nome do banco | `air_ops` |
+| `JWT_SECRET` | Chave de assinatura JWT (mín. 32 chars) | valor de dev |
+| `CORS_ALLOWED_ORIGIN` | URL do frontend permitida pelo CORS | `http://localhost:3000` |
+| `DISCORD_WEBHOOK_REPORTS` | Webhook Discord — aprovação de relatórios | opcional |
+| `DISCORD_WEBHOOK_FLIGHTS` | Webhook Discord — aprovação de protocolos de voo | opcional |
 
-### Backend — Render
-Configure as variáveis de ambiente no painel do Render:
-
-| Variável | Valor |
-|----------|-------|
-| `DATABASE_URL` | Connection string JDBC do Supabase |
-| `POSTGRES_USER` | `postgres` |
-| `POSTGRES_PASSWORD` | Senha do Supabase |
-| `JWT_SECRET` | String aleatória ≥ 32 chars |
-| `CORS_ALLOWED_ORIGIN` | URL do frontend na Vercel |
-| `DISCORD_WEBHOOK_REPORTS` | URL do webhook Discord (opcional) |
-
-### Frontend — Vercel
-Configure no painel da Vercel:
-
-| Variável | Valor |
-|----------|-------|
-| `NEXT_PUBLIC_API_URL` | URL da API no Render |
+Em produção (Render), adicionar `DATABASE_URL` com a connection string JDBC do Supabase.
 
 ---
 
@@ -293,46 +225,25 @@ Configure no painel da Vercel:
 
 ```
 com.air_ops_system/
-├── auth/           JWT filter, AuthService, DTOs de login/registro/settings
-├── users/          User entity, UserController, UserService
-├── pilots/         Pilot entity, Rank, PilotService, RankSeeder
-├── flights/        FlightLog entity, FlightService, enums Aircraft/FlightType
-├── reports/        PerformanceReport, ReportService, cálculo de score
-├── certifications/ Certification entity, CertificationService
-├── documents/      Document entity, DocumentService
-├── discord/        DiscordWebhookService (RestClient, silencioso se sem URL)
-├── pub/            PublicStatsService, endpoint sem autenticação
-└── config/         SecurityConfig, FlywayRunner, RankSeeder, OpenApiConfig
+├── auth/           JWT filter, AuthService, DTOs
+├── users/          User entity e repositório
+├── pilots/         Pilot entity, RankService, progressão automática
+├── flights/        FlightLog, FlightService, enums de tipo/aeronave
+├── reports/        PerformanceReport, cálculo de score, webhook
+├── certifications/ Certification entity e serviço
+├── documents/      Document entity e serviço
+├── discord/        DiscordWebhookService (silencioso se sem URL)
+├── pub/            PublicStatsService (endpoint sem auth)
+└── config/         SecurityConfig, RateLimitFilter, OpenApiConfig
 ```
 
 ---
 
-## Como foi desenvolvido
+## Próximos Passos
 
-Este projeto foi construído iterativamente com **Claude Code** como par de programação. O fluxo de trabalho foi:
-
-1. Definir o que precisava ser feito (regra de negócio, endpoint, componente)
-2. Entender o código que seria gerado antes de aplicar
-3. Testar localmente
-4. Iterar — corrigir bugs, refinar comportamento, adicionar casos de borda
-
-O objetivo não era só ter o código funcionando, mas **entender cada decisão** para conseguir manter e evoluir o sistema de forma independente.
-
-Usar IA como ferramenta de desenvolvimento acelerou muito a produção, mas o conhecimento sobre o que foi construído e por quê continua sendo meu.
-
----
-
-## Próximos passos
-
-- [ ] Paginação em `/flights` e `/reports`
-- [ ] Painel admin com soft delete de usuários
-- [ ] Rate limiting e headers de segurança (Helmet)
-- [ ] Logs estruturados (Pino/Winston equivalente em Java: Logback JSON)
-- [ ] Audit log — tabela `audit_logs` com histórico de ações críticas
-- [ ] Índices no banco para queries de score e status
-
----
-
-## Licença
-
-MIT — sinta-se livre para usar como referência ou ponto de partida.
+- [ ] Logs estruturados + audit log (tabela `audit_logs` com histórico de ações críticas)
+- [ ] Refresh token automático com cookie `httpOnly`
+- [ ] Exportar relatórios PDF/CSV
+- [ ] Testes unitários e de integração com cobertura mínima de 70%
+- [ ] Notificações internas de mudança de status (relatório aprovado/rejeitado)
+- [ ] Gráfico de evolução mensal dos KPIs na página `/status`
