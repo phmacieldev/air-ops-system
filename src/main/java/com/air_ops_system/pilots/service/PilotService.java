@@ -55,6 +55,12 @@ public class PilotService {
         .toList();
   }
 
+  public List<PilotResponseDTO> getAllPilotsAdmin() {
+    return pilotRepository.findAllSorted().stream()
+        .map(this::toDTO)
+        .toList();
+  }
+
   public PilotResponseDTO getPilotById(UUID id) {
     Pilot pilot = pilotRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));

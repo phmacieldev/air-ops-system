@@ -1,5 +1,6 @@
 package com.air_ops_system.reports.controller;
 
+import com.air_ops_system.common.dto.PagedResponseDTO;
 import com.air_ops_system.reports.dto.ReportCreateDTO;
 import com.air_ops_system.reports.dto.ReportResponseDTO;
 import com.air_ops_system.reports.dto.ReportReviewDTO;
@@ -24,8 +25,10 @@ public class ReportController {
   private final ReportService reportService;
 
   @GetMapping
-  public ResponseEntity<List<ReportResponseDTO>> getAllReports() {
-    return ResponseEntity.ok(reportService.getAllReports());
+  public ResponseEntity<PagedResponseDTO<ReportResponseDTO>> getAllReports(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+    return ResponseEntity.ok(reportService.getAllReports(page, size));
   }
 
   @GetMapping("/pilot/{pilotId}")

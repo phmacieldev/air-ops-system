@@ -1,5 +1,6 @@
 package com.air_ops_system.flights.controller;
 
+import com.air_ops_system.common.dto.PagedResponseDTO;
 import com.air_ops_system.flights.dto.FlightCreateDTO;
 import com.air_ops_system.flights.dto.FlightResponseDTO;
 import com.air_ops_system.flights.dto.FlightReviewDTO;
@@ -15,7 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 import java.util.UUID;
 
 @RestController
@@ -26,8 +26,10 @@ public class FlightController {
   private final FlightService flightService;
 
   @GetMapping
-  public ResponseEntity<List<FlightResponseDTO>> getAllFlights() {
-    return ResponseEntity.ok(flightService.getAllFlights());
+  public ResponseEntity<PagedResponseDTO<FlightResponseDTO>> getAllFlights(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+    return ResponseEntity.ok(flightService.getAllFlights(page, size));
   }
 
   @GetMapping("/mine")

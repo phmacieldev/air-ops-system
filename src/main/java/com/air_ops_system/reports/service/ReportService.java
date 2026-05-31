@@ -1,5 +1,6 @@
 package com.air_ops_system.reports.service;
 
+import com.air_ops_system.common.dto.PagedResponseDTO;
 import com.air_ops_system.discord.service.DiscordWebhookService;
 import jakarta.transaction.Transactional;
 import com.air_ops_system.flights.domain.FlightLog;
@@ -15,6 +16,9 @@ import com.air_ops_system.reports.dto.ReportResponseDTO;
 import com.air_ops_system.reports.dto.ReportUpdateDTO;
 import com.air_ops_system.reports.repository.PerformanceReportRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -102,8 +106,19 @@ public class ReportService {
     return toDTO(saved);
   }
 
-  public List<ReportResponseDTO> getAllReports() {
-    return reportRepository.findByOrderByCreatedAtDesc().stream().map(this::toDTO).toList();
+  public PagedResponseDTO<ReportResponseDTO> getAllReports(int page, int size) {
+    Page<PerformanceReport> reportPage = reportRepository.findAll(
+        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+    );
+    return new PagedResponseDTO<>(
+        reportPage.getContent().stream().map(this::toDTO).toList(),
+        new PagedResponseDTO.PaginationMeta(
+            reportPage.getNumber(),
+            reportPage.getSize(),
+            reportPage.getTotalElements(),
+            reportPage.getTotalPages()
+        )
+    );
   }
 
   public List<ReportResponseDTO> getReportsByPilot(UUID pilotId) {
