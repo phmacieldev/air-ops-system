@@ -1,5 +1,6 @@
 package com.air_ops_system.flights.service;
 
+import com.air_ops_system.common.dto.PagedResponseDTO;
 import com.air_ops_system.flights.domain.FlightLog;
 import com.air_ops_system.flights.domain.FlightStatus;
 import com.air_ops_system.flights.dto.FlightCreateDTO;
@@ -13,6 +14,9 @@ import com.air_ops_system.reports.repository.PerformanceReportRepository;
 import com.air_ops_system.users.domain.Role;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,10 +32,19 @@ public class FlightService {
   private final PilotRepository pilotRepository;
   private final PerformanceReportRepository reportRepository;
 
-  public List<FlightResponseDTO> getAllFlights() {
-    return flightLogRepository.findByOrderByCreatedAtDesc().stream()
-        .map(this::toDTO)
-        .toList();
+  public PagedResponseDTO<FlightResponseDTO> getAllFlights(int page, int size) {
+    Page<FlightLog> flightPage = flightLogRepository.findAll(
+        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+    );
+    return new PagedResponseDTO<>(
+        flightPage.getContent().stream().map(this::toDTO).toList(),
+        new PagedResponseDTO.PaginationMeta(
+            flightPage.getNumber(),
+            flightPage.getSize(),
+            flightPage.getTotalElements(),
+            flightPage.getTotalPages()
+        )
+    );
   }
 
   public FlightResponseDTO getFlightById(UUID id) {

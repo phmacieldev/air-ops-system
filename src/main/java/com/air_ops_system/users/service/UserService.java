@@ -1,6 +1,7 @@
 package com.air_ops_system.users.service;
 
 import com.air_ops_system.pilots.repository.PilotRepository;
+import com.air_ops_system.users.domain.Role;
 import com.air_ops_system.users.domain.User;
 import com.air_ops_system.users.dto.UserProfileDTO;
 import com.air_ops_system.users.repository.UserRepository;
@@ -23,13 +24,20 @@ public class UserService {
         .toList();
   }
 
-  public void deleteUser(UUID id) {
-    User user = userRepository.findById(id)
+  public void deleteUser(UUID id, String requesterEmail) {
+    User requester = userRepository.findByEmail(requesterEmail)
+        .orElseThrow(() -> new RuntimeException("Requisitante não encontrado."));
+    User target = userRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-    // Pilot tem FK para User — precisa deletar o piloto antes do usuário
-    pilotRepository.findByUserId(id).ifPresent(pilotRepository::delete);
+    if (requester.getRole() == Role.LEAD && target.getRole() == Role.ADM) {
+      throw new RuntimeException("Lead não pode deletar ADM.");
+    }
+    if (requester.getRole() == Role.ADM && target.getRole() == Role.ADM) {
+      throw new RuntimeException("ADM não pode deletar outro ADM.");
+    }
 
-    userRepository.delete(user);
+    pilotRepository.findByUserId(id).ifPresent(pilotRepository::delete);
+    userRepository.delete(target);
   }
 }

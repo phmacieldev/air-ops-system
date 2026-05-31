@@ -22,6 +22,10 @@ public interface PilotRepository extends JpaRepository<Pilot, UUID> {
          "ORDER BY p.rank.hierarchyLevel DESC, p.callsign ASC")
   List<Pilot> findAllExcludingRoleSorted(@Param("role") Role role);
 
+  // Inclui todos (painel admin)
+  @Query("SELECT p FROM Pilot p ORDER BY p.rank.hierarchyLevel DESC, p.callsign ASC")
+  List<Pilot> findAllSorted();
+
   List<Pilot> findByUserRoleNot(Role role);
 
 }
