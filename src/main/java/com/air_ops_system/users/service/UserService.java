@@ -24,6 +24,23 @@ public class UserService {
         .toList();
   }
 
+  public void changeRole(UUID userId, Role newRole, String requesterEmail) {
+    User requester = userRepository.findByEmail(requesterEmail)
+        .orElseThrow(() -> new RuntimeException("Requisitante não encontrado."));
+    User target = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+    if (requester.getId().equals(target.getId())) {
+      throw new RuntimeException("Não é possível alterar a própria role.");
+    }
+    if (requester.getRole() == Role.ADM && newRole == Role.ADM) {
+      throw new RuntimeException("ADM não pode atribuir role ADM a outro usuário.");
+    }
+
+    target.setRole(newRole);
+    userRepository.save(target);
+  }
+
   public void deleteUser(UUID id, String requesterEmail) {
     User requester = userRepository.findByEmail(requesterEmail)
         .orElseThrow(() -> new RuntimeException("Requisitante não encontrado."));
