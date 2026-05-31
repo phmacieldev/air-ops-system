@@ -72,6 +72,7 @@ O **Air Ops System** é um sistema de gestão operacional construído do zero co
 - **Flyway** para migrações versionadas
 - **Swagger UI** automático via Springdoc
 - **CI** com GitHub Actions — build a cada push/PR
+- **HikariCP** configurado para Supabase free (pool máx. 3, idle-timeout 30s)
 
 ---
 
