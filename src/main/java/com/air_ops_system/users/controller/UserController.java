@@ -26,7 +26,7 @@ public class UserController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
+  @PreAuthorize("hasRole('LEAD')")
   public ResponseEntity<Void> deleteUser(@PathVariable UUID id, Authentication authentication) {
     User requester = (User) authentication.getPrincipal();
     userService.deleteUser(id, requester.getEmail());

@@ -47,11 +47,8 @@ public class UserService {
     User target = userRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-    if (requester.getRole() == Role.LEAD && target.getRole() == Role.ADM) {
-      throw new RuntimeException("Lead não pode deletar ADM.");
-    }
-    if (requester.getRole() == Role.ADM && target.getRole() == Role.ADM) {
-      throw new RuntimeException("ADM não pode deletar outro ADM.");
+    if (requester.getId().equals(target.getId())) {
+      throw new RuntimeException("Não é possível deletar a própria conta.");
     }
 
     pilotRepository.findByUserId(id).ifPresent(pilotRepository::delete);
