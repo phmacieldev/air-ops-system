@@ -36,7 +36,8 @@ public class DiscordWebhookService {
           field("Fim",       flight.getEndAt() != null ? flight.getEndAt().format(FMT) : "—", true),
           field("Aprovado por", flight.getApprovedBy().getCallsign(),                false)
       );
-      send(flightsWebhookUrl, "Protocolo Aprovado — " + pilot.getCallsign(), 4052620, fields, null);
+      var threadName = "Protocolo | " + pilot.getCallsign() + " — " + flight.getFlightType().name();
+      send(flightsWebhookUrl, "Protocolo Aprovado — " + pilot.getCallsign(), 4052620, fields, null, threadName);
     } catch (Exception ignored) {}
   }
 
@@ -55,20 +56,25 @@ public class DiscordWebhookService {
         field("Score acumulado", String.valueOf(pilot.getAccumulatedScore()), false)
     );
 
-    send(reportsWebhookUrl, "Relatório Aprovado — " + pilot.getCallsign(), 4052620, fields, null);
+    var threadName = "Relatório | " + pilot.getCallsign();
+    send(reportsWebhookUrl, "Relatório Aprovado — " + pilot.getCallsign(), 4052620, fields, null, threadName);
   }
 
-  private void send(String url, String title, int color, List<Map<String, Object>> fields, String footer) {
+  private void send(String url, String title, int color, List<Map<String, Object>> fields, String footer, String threadName) {
     var embed = new java.util.HashMap<String, Object>();
     embed.put("title", title);
     embed.put("color", color);
     embed.put("fields", fields);
     if (footer != null) embed.put("footer", Map.of("text", footer));
 
+    var body = new java.util.HashMap<String, Object>();
+    body.put("embeds", List.of(embed));
+    if (threadName != null) body.put("thread_name", threadName);
+
     restClient.post()
         .uri(url)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Map.of("embeds", List.of(embed)))
+        .body(body)
         .retrieve()
         .toBodilessEntity();
   }
