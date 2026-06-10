@@ -33,7 +33,7 @@ class RoleCallServiceTest {
   private Officer officer(UUID id, PoliceRank rank) {
     return Officer.builder()
         .id(id).fullName("Test Officer").callsign("T-01")
-        .rank(rank).units(new HashSet<>()).weapons(new ArrayList<>())
+        .rank(rank).unitMemberships(new HashSet<>()).weapons(new ArrayList<>())
         .employer("LSPD").build();
   }
 
@@ -161,11 +161,11 @@ class RoleCallServiceTest {
     }
 
     @Test
-    @DisplayName("throws FORBIDDEN when reviewer rank is below Lieutenant")
+    @DisplayName("throws FORBIDDEN when reviewer rank is below Sergeant")
     void lowRankCannotReview() {
       UUID requestId = UUID.randomUUID();
       Officer applicant = officer(UUID.randomUUID(), PoliceRank.CADET);
-      Officer reviewer  = officer(UUID.randomUUID(), PoliceRank.SERGEANT); // rank 9, needs 10
+      Officer reviewer  = officer(UUID.randomUUID(), PoliceRank.CORPORAL); // rank 8, needs 9
       reviewer.setUser(userWithEmail("sgt@lspd.com"));
 
       RoleCallRequest req = pendingRequest(requestId, applicant, RoleCallType.PROMOTION, "SOLO_CADET");

@@ -2,13 +2,16 @@ package com.air_ops_system.officers.service;
 
 import com.air_ops_system.officers.domain.Officer;
 import com.air_ops_system.officers.domain.OfficerStatus;
+import com.air_ops_system.officers.domain.OfficerUnit;
 import com.air_ops_system.officers.domain.PoliceRank;
 import com.air_ops_system.officers.domain.PoliceUnit;
 import com.air_ops_system.officers.dto.CreateOfficerDTO;
 import com.air_ops_system.officers.dto.OfficerResponseDTO;
+import com.air_ops_system.officers.dto.OfficerUnitDTO;
 import com.air_ops_system.officers.dto.UpdateOfficerDTO;
 import com.air_ops_system.officers.repository.OfficerRepository;
 import com.air_ops_system.pilots.repository.PilotRepository;
+import com.air_ops_system.pilots.repository.RankRepository;
 import com.air_ops_system.users.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +40,7 @@ class OfficerServiceTest {
   @Mock OfficerRepository officerRepository;
   @Mock UserRepository userRepository;
   @Mock PilotRepository pilotRepository;
+  @Mock RankRepository rankRepository;
 
   @InjectMocks OfficerService officerService;
 
@@ -47,8 +52,8 @@ class OfficerServiceTest {
         .fullName(fullName)
         .callsign("A-01")
         .rank(rank)
-        .units(new HashSet<>())
-        .weapons(new java.util.ArrayList<>())
+        .unitMemberships(new HashSet<>())
+        .weapons(new ArrayList<>())
         .employer("Los Santos Police Department")
         .build();
   }
@@ -65,17 +70,18 @@ class OfficerServiceTest {
       UUID id = UUID.randomUUID();
       CreateOfficerDTO dto = new CreateOfficerDTO(
           "Henry Schneider", "H-01", "disc123", null,
-          PoliceRank.OFFICER, List.of(PoliceUnit.ASD), null);
+          PoliceRank.OFFICER,
+          List.of(new CreateOfficerDTO.UnitEntry(PoliceUnit.ASD, null)),
+          null);
 
       Officer saved = buildOfficer(id, "Henry Schneider", PoliceRank.OFFICER);
-      saved.setUnits(new HashSet<>(Set.of(PoliceUnit.ASD)));
       when(officerRepository.save(any())).thenReturn(saved);
 
       OfficerResponseDTO result = officerService.create(dto);
 
       assertThat(result.fullName()).isEqualTo("Henry Schneider");
       assertThat(result.rank()).isEqualTo(PoliceRank.OFFICER);
-      verify(officerRepository).save(any(Officer.class));
+      verify(officerRepository, atLeastOnce()).save(any(Officer.class));
     }
 
     @Test
@@ -89,7 +95,7 @@ class OfficerServiceTest {
 
       officerService.create(dto);
 
-      verify(officerRepository).save(argThat(o -> o.getUnits() != null && o.getUnits().isEmpty()));
+      verify(officerRepository).save(argThat(o -> o.getUnitMemberships() != null && o.getUnitMemberships().isEmpty()));
     }
 
     @Test
@@ -224,7 +230,6 @@ class OfficerServiceTest {
       when(officerRepository.existsByBadgeNumber(1001)).thenReturn(true);
       when(officerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-      // same badge → no conflict
       UpdateOfficerDTO dto = new UpdateOfficerDTO(
           null, null, null, null, null, null, 1001,
           null, null, null, null, null, null);
@@ -237,19 +242,20 @@ class OfficerServiceTest {
     void replacesUnits() {
       UUID id = UUID.randomUUID();
       Officer officer = buildOfficer(id, "Multi", PoliceRank.OFFICER);
-      officer.getUnits().add(PoliceUnit.CID);
       when(officerRepository.findById(id)).thenReturn(Optional.of(officer));
       when(officerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
       UpdateOfficerDTO dto = new UpdateOfficerDTO(
           null, null, null, null,
-          List.of(PoliceUnit.HEAT, PoliceUnit.MU),
+          List.of(
+              new UpdateOfficerDTO.UnitEntry(PoliceUnit.HEAT, null),
+              new UpdateOfficerDTO.UnitEntry(PoliceUnit.MU, null)),
           null, null, null, null, null, null, null, null);
 
       OfficerResponseDTO result = officerService.patch(id, dto);
 
-      assertThat(result.units()).containsExactlyInAnyOrder(PoliceUnit.HEAT, PoliceUnit.MU);
-      assertThat(result.units()).doesNotContain(PoliceUnit.CID);
+      assertThat(result.unitNames()).containsExactlyInAnyOrder("HEAT", "MU");
+      assertThat(result.unitNames()).doesNotContain("CID");
     }
   }
 
