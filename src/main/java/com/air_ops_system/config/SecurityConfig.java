@@ -29,8 +29,8 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-  @Value("${cors.allowed-origin}")
-  private String corsAllowedOrigin;
+  @Value("${cors.allowed-origins}")
+  private String corsAllowedOrigins;
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final UserDetailsService userDetailsService;
@@ -54,8 +54,9 @@ public class SecurityConfig {
 
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
+    List<String> origins = List.of(corsAllowedOrigins.split(","));
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(List.of(corsAllowedOrigin));
+    config.setAllowedOrigins(origins);
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
     config.setAllowedHeaders(List.of("*"));
     config.setAllowCredentials(true);
