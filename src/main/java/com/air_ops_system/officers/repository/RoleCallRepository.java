@@ -15,7 +15,7 @@ public interface RoleCallRepository extends JpaRepository<RoleCallRequest, UUID>
   List<RoleCallRequest> findByOfficerIdOrderByCreatedAtDesc(UUID officerId);
   long countByStatus(RoleCallStatus status);
 
-  @Query("SELECT u, COUNT(r) FROM RoleCallRequest r JOIN r.officer o JOIN o.units u WHERE r.status = 'PENDING' GROUP BY u")
+  @Query("SELECT u.unit, COUNT(r) FROM RoleCallRequest r JOIN r.officer o JOIN o.unitMemberships u WHERE r.status = 'PENDING' GROUP BY u.unit")
   List<Object[]> countPendingGroupedByUnit();
 
   List<RoleCallRequest> findTop20ByStatusNotOrderByReviewedAtDesc(RoleCallStatus status);
