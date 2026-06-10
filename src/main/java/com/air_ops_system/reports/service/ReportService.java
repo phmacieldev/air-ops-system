@@ -103,7 +103,7 @@ public class ReportService {
       discordWebhookService.sendReportApproved(saved);
     }
 
-    return toDTO(saved);
+    return toDTO(reportRepository.findById(id).orElseThrow());
   }
 
   public PagedResponseDTO<ReportResponseDTO> getAllReports(int page, int size) {

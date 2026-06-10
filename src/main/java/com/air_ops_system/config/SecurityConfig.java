@@ -80,6 +80,7 @@ public class SecurityConfig {
                 "/public/**",
                 "/auth/login",
                 "/auth/setup",
+                "/ws/**",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/v3/api-docs/**"
