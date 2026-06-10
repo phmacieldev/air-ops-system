@@ -22,6 +22,7 @@ public class HealthController {
 
   @GetMapping("/health")
   public ResponseEntity<Map<String, Object>> health() {
+    System.out.println("Health check pinged at " + Instant.now());
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("status", "ok");
     body.put("timestamp", Instant.now().toString());
