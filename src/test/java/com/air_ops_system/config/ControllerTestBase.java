@@ -15,7 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * controller. @WithMockUser then sets up the SecurityContext for individual test methods.
  */
 @TestPropertySource(properties = {
-    "cors.allowed-origin=http://localhost:3000",
+    "cors.allowed-origins=http://localhost:3000",
     "app.jwt.secret=dGVzdHNlY3JldGtleXRoYXRpc2xvbmcxMjM0NTY3ODkwMTIzNDU2Nzg5MA=="
 })
 public abstract class ControllerTestBase {
