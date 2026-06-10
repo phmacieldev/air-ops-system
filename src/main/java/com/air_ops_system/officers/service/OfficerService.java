@@ -8,6 +8,7 @@ import com.air_ops_system.pilots.domain.Rank;
 import com.air_ops_system.pilots.repository.PilotRepository;
 import com.air_ops_system.pilots.repository.RankRepository;
 import com.air_ops_system.users.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class OfficerService {
   private final UserRepository userRepository;
   private final PilotRepository pilotRepository;
   private final RankRepository rankRepository;
+  private final EntityManager entityManager;
 
   @Transactional
   public OfficerResponseDTO create(CreateOfficerDTO dto) {
@@ -85,7 +87,8 @@ public class OfficerService {
 
     if (dto.units() != null) {
       officer.getUnitMemberships().clear();
-      officerRepository.save(officer);
+      officerRepository.saveAndFlush(officer);
+      entityManager.refresh(officer);
       for (UpdateOfficerDTO.UnitEntry entry : dto.units()) {
         officer.getUnitMemberships().add(buildUnitMembership(officer, entry.unit(), entry.unitRankId()));
       }
