@@ -37,7 +37,7 @@ public class RoleCallService {
       Map.entry(PoliceRank.COMMISSIONER,    14)
   );
 
-  private static final int LIEUTENANT_LEVEL = 10;
+  private static final int SERGEANT_LEVEL = 9;
 
   private final RoleCallRepository roleCallRepository;
   private final OfficerRepository officerRepository;
@@ -105,7 +105,7 @@ public class RoleCallService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Reviewer has no officer profile"));
 
     int reviewerLevel = RANK_ORDER.getOrDefault(reviewer.getRank(), 0);
-    if (reviewerLevel < LIEUTENANT_LEVEL) {
+    if (reviewerLevel < SERGEANT_LEVEL) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only Lieutenant+ can review requests");
     }
 
