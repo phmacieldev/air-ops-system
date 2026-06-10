@@ -4,7 +4,6 @@ import com.air_ops_system.officers.domain.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public record OfficerResponseDTO(
@@ -13,7 +12,9 @@ public record OfficerResponseDTO(
     String callsign,
     String profileImageUrl,
     PoliceRank rank,
-    Set<PoliceUnit> units,
+    List<OfficerUnitDTO> units,
+    // kept for backward-compat (plain unit names)
+    List<String> unitNames,
     OfficerStatus status,
     Integer badgeNumber,
     String phone,
@@ -24,6 +25,5 @@ public record OfficerResponseDTO(
     String employer,
     LocalDateTime hiredAt,
     List<OfficerWeaponDTO> weapons,
-    // ASD pilot data (null if not linked)
     AsdProfileDTO asd
 ) {}

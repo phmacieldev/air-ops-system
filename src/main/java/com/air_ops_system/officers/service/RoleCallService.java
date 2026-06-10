@@ -1,6 +1,7 @@
 package com.air_ops_system.officers.service;
 
 import com.air_ops_system.officers.domain.*;
+import com.air_ops_system.officers.domain.OfficerUnit;
 import com.air_ops_system.officers.dto.*;
 import com.air_ops_system.officers.repository.OfficerRepository;
 import com.air_ops_system.officers.repository.RoleCallRepository;
@@ -47,8 +48,8 @@ public class RoleCallService {
 
     String currentValue = switch (dto.type()) {
       case PROMOTION -> officer.getRank() != null ? officer.getRank().name() : null;
-      case UNIT      -> officer.getUnits().isEmpty() ? null :
-                        officer.getUnits().stream().map(Enum::name).sorted().collect(java.util.stream.Collectors.joining(","));
+      case UNIT      -> officer.getUnitMemberships().isEmpty() ? null :
+                        officer.getUnitMemberships().stream().map(u -> u.getUnit().name()).sorted().collect(java.util.stream.Collectors.joining(","));
       case BADGE     -> officer.getBadgeNumber() != null ? officer.getBadgeNumber().toString() : null;
       case STATUS    -> officer.getStatus() != null ? officer.getStatus().name() : null;
     };
@@ -125,9 +126,15 @@ public class RoleCallService {
       case PROMOTION -> officer.setRank(PoliceRank.valueOf(value));
       case UNIT      -> {
         if (value.isBlank()) {
-          officer.getUnits().clear();
+          officer.getUnitMemberships().clear();
         } else {
-          officer.getUnits().add(PoliceUnit.valueOf(value));
+          PoliceUnit pu = PoliceUnit.valueOf(value);
+          boolean alreadyMember = officer.getUnitMemberships().stream()
+              .anyMatch(m -> m.getUnit() == pu);
+          if (!alreadyMember) {
+            officer.getUnitMemberships().add(
+                OfficerUnit.builder().officer(officer).unit(pu).build());
+          }
         }
       }
       case BADGE     -> officer.setBadgeNumber(Integer.parseInt(value));

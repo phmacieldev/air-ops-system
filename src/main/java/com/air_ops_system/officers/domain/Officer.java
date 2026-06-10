@@ -38,11 +38,8 @@ public class Officer {
   private PoliceRank rank;
 
   @Builder.Default
-  @ElementCollection(fetch = jakarta.persistence.FetchType.EAGER)
-  @CollectionTable(name = "officer_units", joinColumns = @JoinColumn(name = "officer_id"))
-  @Column(name = "unit")
-  @Enumerated(EnumType.STRING)
-  private Set<PoliceUnit> units = new HashSet<>();
+  @OneToMany(mappedBy = "officer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  private Set<OfficerUnit> unitMemberships = new HashSet<>();
 
   @Builder.Default
   @Enumerated(EnumType.STRING)

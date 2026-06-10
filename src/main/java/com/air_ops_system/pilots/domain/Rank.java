@@ -29,6 +29,9 @@ public class Rank {
   @Column(nullable = false)
   private String description;
 
+  @Column(nullable = false, length = 50)
+  private String unit = "ASD";
+
   @Column(nullable = false)
   private LocalDateTime createdAt;
 

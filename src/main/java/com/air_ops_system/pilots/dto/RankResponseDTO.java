@@ -6,5 +6,6 @@ public record RankResponseDTO(
     UUID id,
     String name,
     int hierarchyLevel,
-    String description
+    String description,
+    String unit
 ) {}

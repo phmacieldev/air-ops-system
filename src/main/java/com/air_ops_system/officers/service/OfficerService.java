@@ -4,7 +4,9 @@ import com.air_ops_system.officers.domain.*;
 import com.air_ops_system.officers.dto.*;
 import com.air_ops_system.officers.repository.OfficerRepository;
 import com.air_ops_system.pilots.domain.Pilot;
+import com.air_ops_system.pilots.domain.Rank;
 import com.air_ops_system.pilots.repository.PilotRepository;
+import com.air_ops_system.pilots.repository.RankRepository;
 import com.air_ops_system.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +24,7 @@ public class OfficerService {
   private final OfficerRepository officerRepository;
   private final UserRepository userRepository;
   private final PilotRepository pilotRepository;
+  private final RankRepository rankRepository;
 
   @Transactional
   public OfficerResponseDTO create(CreateOfficerDTO dto) {
@@ -32,7 +34,6 @@ public class OfficerService {
         .discordId(dto.discordId())
         .profileImageUrl(dto.profileImageUrl())
         .rank(dto.rank())
-        .units(dto.units() != null ? new HashSet<>(dto.units()) : new HashSet<>())
         .employer("Los Santos Police Department")
         .build();
 
@@ -40,7 +41,17 @@ public class OfficerService {
       userRepository.findByEmail(dto.userEmail()).ifPresent(officer::setUser);
     }
 
-    return toDTO(officerRepository.save(officer));
+    Officer saved = officerRepository.save(officer);
+
+    if (dto.units() != null) {
+      for (CreateOfficerDTO.UnitEntry entry : dto.units()) {
+        OfficerUnit ou = buildUnitMembership(saved, entry.unit(), entry.unitRankId());
+        saved.getUnitMemberships().add(ou);
+      }
+      officerRepository.save(saved);
+    }
+
+    return toDTO(saved);
   }
 
   public List<OfficerResponseDTO> findAll() {
@@ -61,17 +72,24 @@ public class OfficerService {
   public OfficerResponseDTO patch(UUID id, UpdateOfficerDTO dto) {
     Officer officer = getOrThrow(id);
 
-    if (dto.fullName()       != null) officer.setFullName(dto.fullName());
-    if (dto.callsign()       != null) officer.setCallsign(dto.callsign());
-    if (dto.profileImageUrl()!= null) officer.setProfileImageUrl(dto.profileImageUrl());
-    if (dto.rank()           != null) officer.setRank(dto.rank());
-    if (dto.units()          != null) { officer.getUnits().clear(); officer.getUnits().addAll(dto.units()); }
-    if (dto.status()         != null) officer.setStatus(dto.status());
-    if (dto.phone()          != null) officer.setPhone(dto.phone());
-    if (dto.dna()            != null) officer.setDna(dto.dna());
-    if (dto.fingerprint()    != null) officer.setFingerprint(dto.fingerprint());
-    if (dto.notes()          != null) officer.setNotes(dto.notes());
-    if (dto.discordId()      != null) officer.setDiscordId(dto.discordId());
+    if (dto.fullName()        != null) officer.setFullName(dto.fullName());
+    if (dto.callsign()        != null) officer.setCallsign(dto.callsign());
+    if (dto.profileImageUrl() != null) officer.setProfileImageUrl(dto.profileImageUrl());
+    if (dto.rank()            != null) officer.setRank(dto.rank());
+    if (dto.status()          != null) officer.setStatus(dto.status());
+    if (dto.phone()           != null) officer.setPhone(dto.phone());
+    if (dto.dna()             != null) officer.setDna(dto.dna());
+    if (dto.fingerprint()     != null) officer.setFingerprint(dto.fingerprint());
+    if (dto.notes()           != null) officer.setNotes(dto.notes());
+    if (dto.discordId()       != null) officer.setDiscordId(dto.discordId());
+
+    if (dto.units() != null) {
+      officer.getUnitMemberships().clear();
+      officerRepository.save(officer);
+      for (UpdateOfficerDTO.UnitEntry entry : dto.units()) {
+        officer.getUnitMemberships().add(buildUnitMembership(officer, entry.unit(), entry.unitRankId()));
+      }
+    }
 
     if (dto.badgeNumber() != null) {
       boolean taken = officerRepository.existsByBadgeNumber(dto.badgeNumber())
@@ -83,12 +101,8 @@ public class OfficerService {
     if (dto.weapons() != null) {
       officer.getWeapons().clear();
       for (UpdateOfficerDTO.WeaponEntry w : dto.weapons()) {
-        OfficerWeapon weapon = OfficerWeapon.builder()
-            .officer(officer)
-            .weaponClass(w.weaponClass())
-            .serial(w.serial())
-            .build();
-        officer.getWeapons().add(weapon);
+        officer.getWeapons().add(OfficerWeapon.builder()
+            .officer(officer).weaponClass(w.weaponClass()).serial(w.serial()).build());
       }
     }
 
@@ -98,6 +112,13 @@ public class OfficerService {
   @Transactional
   public void delete(UUID id) {
     officerRepository.delete(getOrThrow(id));
+  }
+
+  private OfficerUnit buildUnitMembership(Officer officer, PoliceUnit unit, UUID unitRankId) {
+    Rank rank = unitRankId != null
+        ? rankRepository.findById(unitRankId).orElse(null)
+        : null;
+    return OfficerUnit.builder().officer(officer).unit(unit).unitRank(rank).build();
   }
 
   private Officer getOrThrow(UUID id) {
@@ -110,6 +131,15 @@ public class OfficerService {
         .map(w -> new OfficerWeaponDTO(w.getWeaponClass(), w.getSerial()))
         .toList();
 
+    List<OfficerUnitDTO> units = o.getUnitMemberships().stream()
+        .map(m -> new OfficerUnitDTO(
+            m.getUnit().name(),
+            m.getUnitRank() != null ? m.getUnitRank().getId() : null,
+            m.getUnitRank() != null ? m.getUnitRank().getName() : null))
+        .toList();
+
+    List<String> unitNames = units.stream().map(OfficerUnitDTO::unit).toList();
+
     AsdProfileDTO asd = null;
     if (o.getUser() != null) {
       Pilot pilot = pilotRepository.findByUserId(o.getUser().getId()).orElse(null);
@@ -120,16 +150,14 @@ public class OfficerService {
             pilot.getCallsign(),
             pilot.getFlightMinutes(),
             pilot.getAccumulatedScore(),
-            pilot.getStatus() != null ? pilot.getStatus().name() : null
-        );
+            pilot.getStatus() != null ? pilot.getStatus().name() : null);
       }
     }
 
     return new OfficerResponseDTO(
         o.getId(), o.getFullName(), o.getCallsign(), o.getProfileImageUrl(),
-        o.getRank(), o.getUnits(), o.getStatus(), o.getBadgeNumber(),
+        o.getRank(), units, unitNames, o.getStatus(), o.getBadgeNumber(),
         o.getPhone(), o.getDna(), o.getFingerprint(), o.getNotes(),
-        o.getDiscordId(), o.getEmployer(), o.getHiredAt(), weapons, asd
-    );
+        o.getDiscordId(), o.getEmployer(), o.getHiredAt(), weapons, asd);
   }
 }
