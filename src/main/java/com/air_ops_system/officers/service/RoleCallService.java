@@ -52,6 +52,8 @@ public class RoleCallService {
                         officer.getUnitMemberships().stream().map(u -> u.getUnit().name()).sorted().collect(java.util.stream.Collectors.joining(","));
       case BADGE     -> officer.getBadgeNumber() != null ? officer.getBadgeNumber().toString() : null;
       case STATUS    -> officer.getStatus() != null ? officer.getStatus().name() : null;
+      case RESIGNATION -> officer.getStatus() != null ? officer.getStatus().name() : null;
+      case ABSENCE     -> officer.getStatus() != null ? officer.getStatus().name() : null;
     };
 
     RoleCallRequest req = RoleCallRequest.builder()
@@ -137,8 +139,10 @@ public class RoleCallService {
           }
         }
       }
-      case BADGE     -> officer.setBadgeNumber(Integer.parseInt(value));
-      case STATUS    -> officer.setStatus(OfficerStatus.valueOf(value));
+      case BADGE       -> officer.setBadgeNumber(Integer.parseInt(value));
+      case STATUS      -> officer.setStatus(OfficerStatus.valueOf(value));
+      case RESIGNATION -> officer.setStatus(OfficerStatus.INACTIVE);
+      case ABSENCE     -> officer.setStatus(OfficerStatus.ABSENT);
     }
     officerRepository.save(officer);
   }

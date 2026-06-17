@@ -49,7 +49,7 @@ public class Certification {
   private CertificationType certificateType;
 
   @ManyToOne
-  @JoinColumn(name = "issued_by_id", nullable = false)
+  @JoinColumn(name = "issued_by_id")
   private Pilot issuedBy;
 
   @Column(nullable = false)
