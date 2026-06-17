@@ -130,12 +130,18 @@ public class RoleCallService {
         if (value.isBlank()) {
           officer.getUnitMemberships().clear();
         } else {
-          PoliceUnit pu = PoliceUnit.valueOf(value);
-          boolean alreadyMember = officer.getUnitMemberships().stream()
-              .anyMatch(m -> m.getUnit() == pu);
-          if (!alreadyMember) {
-            officer.getUnitMemberships().add(
-                OfficerUnit.builder().officer(officer).unit(pu).build());
+          java.util.Set<PoliceUnit> requested = java.util.Arrays.stream(value.split(","))
+              .map(String::trim).filter(s -> !s.isEmpty())
+              .map(PoliceUnit::valueOf)
+              .collect(java.util.stream.Collectors.toSet());
+          officer.getUnitMemberships().removeIf(m -> !requested.contains(m.getUnit()));
+          for (PoliceUnit pu : requested) {
+            boolean alreadyMember = officer.getUnitMemberships().stream()
+                .anyMatch(m -> m.getUnit() == pu);
+            if (!alreadyMember) {
+              officer.getUnitMemberships().add(
+                  OfficerUnit.builder().officer(officer).unit(pu).build());
+            }
           }
         }
       }
