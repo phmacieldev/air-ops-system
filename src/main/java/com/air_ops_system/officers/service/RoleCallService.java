@@ -127,15 +127,11 @@ public class RoleCallService {
     switch (type) {
       case PROMOTION -> officer.setRank(PoliceRank.valueOf(value));
       case UNIT      -> {
-        if (value.isBlank()) {
-          officer.getUnitMemberships().clear();
-        } else {
-          java.util.Set<PoliceUnit> requested = java.util.Arrays.stream(value.split(","))
-              .map(String::trim).filter(s -> !s.isEmpty())
-              .map(PoliceUnit::valueOf)
-              .collect(java.util.stream.Collectors.toSet());
-          officer.getUnitMemberships().removeIf(m -> !requested.contains(m.getUnit()));
-          for (PoliceUnit pu : requested) {
+        if (!value.isBlank()) {
+          for (String token : value.split(",")) {
+            String trimmed = token.trim();
+            if (trimmed.isEmpty()) continue;
+            PoliceUnit pu = PoliceUnit.valueOf(trimmed);
             boolean alreadyMember = officer.getUnitMemberships().stream()
                 .anyMatch(m -> m.getUnit() == pu);
             if (!alreadyMember) {
