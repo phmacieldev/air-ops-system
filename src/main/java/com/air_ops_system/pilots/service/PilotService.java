@@ -134,6 +134,7 @@ public class PilotService {
     return toDTO(pilotRepository.save(pilot));
   }
 
+  @org.springframework.transaction.annotation.Transactional
   public void deletePilot(UUID id) {
     Pilot pilot = pilotRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Piloto não encontrado."));

@@ -4,5 +4,7 @@ public enum RoleCallType {
   PROMOTION,
   UNIT,
   BADGE,
-  STATUS
+  STATUS,
+  RESIGNATION,
+  ABSENCE
 }
