@@ -1,5 +1,6 @@
 package com.air_ops_system.officers.controller;
 
+import com.air_ops_system.officers.domain.PoliceUnit;
 import com.air_ops_system.officers.dto.CreateOfficerDTO;
 import com.air_ops_system.officers.dto.OfficerResponseDTO;
 import com.air_ops_system.officers.dto.UpdateOfficerDTO;
@@ -59,6 +60,13 @@ public class OfficerController {
   @PreAuthorize("hasAnyRole('LEAD', 'ADM')")
   public ResponseEntity<Void> delete(@PathVariable UUID id) {
     officerService.delete(id);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/{id}/units/{unit}")
+  @PreAuthorize("hasAnyRole('LEAD', 'ADM', 'SUPERVISOR')")
+  public ResponseEntity<Void> removeFromUnit(@PathVariable UUID id, @PathVariable PoliceUnit unit) {
+    officerService.removeFromUnit(id, unit);
     return ResponseEntity.noContent().build();
   }
 }

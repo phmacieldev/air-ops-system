@@ -117,6 +117,16 @@ public class OfficerService {
     officerRepository.delete(getOrThrow(id));
   }
 
+  @Transactional
+  public void removeFromUnit(UUID officerId, PoliceUnit unit) {
+    Officer officer = getOrThrow(officerId);
+    boolean removed = officer.getUnitMemberships().removeIf(m -> m.getUnit() == unit);
+    if (!removed) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Officer is not in unit " + unit);
+    }
+    officerRepository.save(officer);
+  }
+
   private OfficerUnit buildUnitMembership(Officer officer, PoliceUnit unit, UUID unitRankId) {
     Rank rank = unitRankId != null
         ? rankRepository.findById(unitRankId).orElse(null)
